@@ -1,0 +1,34 @@
+diff --git a/build.rs b/build.rs
+index 2c6f597..76619ec 100644
+--- a/build.rs
++++ b/build.rs
+@@ -1,4 +1,4 @@
+-use std::collections::{HashMap, HashSet};
++use std::collections::{BTreeMap, HashSet};
+ use std::env;
+ use std::fs::File;
+ use std::path::Path;
+@@ -113,7 +113,7 @@ fn save_text_map(hashes: &HashSet<TextMapEntry>, language: &str) {
+     let file_name = format!("TextMap{language}.json");
+ 
+     let text_map_url = format!("{BASE_RESOURCE_URL}/TextMap/{file_name}");
+-    let text_map: HashMap<String, String> = download_as_json::<HashMap<String, String>>(&text_map_url)
++    let text_map: BTreeMap<String, String> = download_as_json::<BTreeMap<String, String>>(&text_map_url)
+         .into_iter()
+         .filter(|(k, _)| hashes.contains(k))
+         .collect();
+@@ -130,11 +130,9 @@ fn resource_url_of(name: &str) -> String {
+ }
+ 
+ fn download_as_json<T: DeserializeOwned>(url: &str) -> T {
+-    ureq::get(url)
+-        .call()
+-        .unwrap()
+-        .into_json()
+-        .unwrap_or_else(|_| panic!("Failed to read json from url: {}", url))
++    let filename = url.rsplit("/").next().unwrap();
++    let file = File::open(filename).expect(&format!("Failed to open local file: {}", filename));
++    ureq::serde_json::from_reader(file).expect(&format!("Failed to parse json from file: {}", filename))
+ }
+ 
+ fn write_to_out<T: DeserializeOwned + Serialize>(value: T, file_name: &str) {

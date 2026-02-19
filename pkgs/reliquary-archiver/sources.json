@@ -1,0 +1,17 @@
+{
+  "gameDataRev": "86bd21fd0e924c373d9081fcd803ad88ad5f0bd7",
+  "resources": {
+    "AvatarConfig.json": "sha256-xGyfZ/w3T4RQOFK9GSfd0L4BQFfkrxxHN5HCNMRi7b0=",
+    "AvatarConfigLD.json": "sha256-vUbEta5WhV4YAX1lu1Vya3ey0jqztIexW4KV0mVfR0g=",
+    "EquipmentConfig.json": "sha256-9RFdFJGePRCFUMDusEOnHSIa6sy7LRt9+vYDg8O61hU=",
+    "RelicSetConfig.json": "sha256-8Q7LhIyMo3moyT6kwYvvv8HjwVJoAz+7sTMXpr9KJB8=",
+    "ItemConfig.json": "sha256-9aXaKY8B6Uyca0gaWRt4f8FYfZtL2iIe8O3KUnReS5I=",
+    "AvatarSkillTreeConfig.json": "sha256-BN+GpoXiQ9P608uSk2vGZ8+LZQhrW94pY2/saTITzsQ=",
+    "AvatarSkillTreeConfigLD.json": "sha256-9DJBB3ayCeWy55uciLpRe2LxtJio9cEUod2UG6colYQ=",
+    "MultiplePathAvatarConfig.json": "sha256-ZCMIA8x/Y2pu95wYWpL2j9YVsLthjbNrvVlf5h9Vbfk=",
+    "RelicConfig.json": "sha256-QpVp6f/EOA0/eR7AeaXdr6WLLt6B6Xf77IJTrAPaRtU=",
+    "RelicMainAffixConfig.json": "sha256-EtKxp0untMcrCOrtq9T+KAS/kJNWd2qBC4vLPJzW7Is=",
+    "RelicSubAffixConfig.json": "sha256-UuxusWfanSzXvOdpYNgDH3md4l9L7NfxX00lOg+Uiec=",
+    "TextMapEN.json": "sha256-XRqBLauXc28Pu4Ad/figXPtgQzgB/gMo9rthqox69NU="
+  }
+}

@@ -17,4 +17,5 @@
   overlays = import ./overlays; # nixpkgs overlays
 
   sjmcl = pkgs.callPackage ./pkgs/sjmcl/package.nix { };
+  reliquary-archiver = pkgs.callPackage ./pkgs/reliquary-archiver/package.nix { };
 }
