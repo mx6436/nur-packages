@@ -113,7 +113,7 @@ stdenv.mkDerivation {
   installPhase = ''
     runHook preInstall
 
-    mkdir -p $out/bin $out/lib $out/share
+    mkdir -p $out/{bin,lib,share}
     ln -s ${unwrapped}/bin/* $out/bin/
     ln -s ${unwrapped}/lib/* $out/lib/
     ln -s ${unwrapped}/share/* $out/share/
