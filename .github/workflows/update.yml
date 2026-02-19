@@ -1,0 +1,41 @@
+# .github/workflows/update.yml
+name: daily update
+
+on:
+  schedule:
+    # UTC 时间，每天 04:00 运行
+    - cron: '0 4 * * *'
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: checkout repo
+        uses: actions/checkout@v3
+        with:
+          persist-credentials: false    # 使用自定义 push 凭据
+
+      # 准备 nix 环境以便 fish 脚本可以通过 `nix shell …` 运行
+      - name: install nix
+        uses: cachix/install-nix-action@v20
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+
+      - name: run update script
+        run: |
+          chmod +x pkgs/reliquary-archiver/update.fish
+          pkgs/reliquary-archiver/update.fish
+
+      - name: commit & push
+        run: |
+          git config user.name "github actions"
+          git config user.email "actions@github.com"
+          # 只有有变动的时候才提交
+          if ! git diff --quiet; then
+            git add pkgs/reliquary-archiver/sources.json
+            git commit -m "chore: daily update"
+            git push
+          else
+            echo "No changes to commit"
+          fi
