@@ -24,7 +24,7 @@ let
   ) sources.resources;
 in
 
-rustPlatform.buildRustPackage {
+rustPlatform.buildRustPackage (finalAttrs: {
   pname = "reliquary-archiver";
   version = "0.13.2";
 
@@ -55,9 +55,10 @@ rustPlatform.buildRustPackage {
   meta = {
     description = "Tool to create a relic export from network packets of a certain turn-based anime game";
     homepage = "https://github.com/IceDynamix/reliquary-archiver";
+    changelog = "https://github.com/IceDynamix/reliquary-archiver/releases/tag/v${finalAttrs.version}";
     license = lib.licenses.mit;
     maintainers = [ ];
     mainProgram = "reliquary-archiver";
     platforms = lib.platforms.linux ++ lib.platforms.darwin;
   };
-}
+})
