@@ -10,12 +10,30 @@
   pkgs ? import <nixpkgs> { },
 }:
 
+let
+  # path to the packages directory relative to this file
+  pkgRoot = ./pkgs;
+
+  # list of subdirectories in pkgs that contain a package.nix
+  pkgNames = builtins.filter (name: builtins.pathExists (./pkgs/${name}/package.nix)) (
+    builtins.attrNames (builtins.readDir pkgRoot)
+  );
+
+  # build an attrset mapping each name to its callPackage result
+  pkgAttrs = builtins.listToAttrs (
+    map (name: {
+      name = name;
+      value = pkgs.callPackage (./pkgs/${name}/package.nix) { };
+    }) pkgNames
+  );
+in
+
 {
   # The `lib`, `modules`, and `overlays` names are special
   lib = import ./lib { inherit pkgs; }; # functions
   modules = import ./modules; # NixOS modules
   overlays = import ./overlays; # nixpkgs overlays
-
-  sjmcl = pkgs.callPackage ./pkgs/sjmcl/package.nix { };
-  reliquary-archiver = pkgs.callPackage ./pkgs/reliquary-archiver/package.nix { };
 }
+
+# merge in dynamically-discovered packages
+// pkgAttrs
