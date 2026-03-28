@@ -1,10 +1,14 @@
 # .github/workflows/update.yml
 name: daily update
 
+permissions:
+  contents: write
+
 on:
   schedule:
     # UTC 时间，每天 04:00 运行
     - cron: '0 4 * * *'
+  workflow_dispatch:
 
 jobs:
   update:
@@ -14,7 +18,7 @@ jobs:
       - name: checkout repo
         uses: actions/checkout@v3
         with:
-          persist-credentials: false    # 使用自定义 push 凭据
+          persist-credentials: true
 
       # 准备 nix 环境以便 fish 脚本可以通过 `nix shell …` 运行
       - name: install nix
@@ -31,10 +35,14 @@ jobs:
         run: |
           git config user.name "github actions"
           git config user.email "actions@github.com"
-          # 只有有变动的时候才提交
-          if ! git diff --quiet; then
-            git add pkgs/reliquary-archiver/sources.json
-            git commit -m "chore: daily update"
+          
+          # 检查 manifest.json 是否被修改
+          if ! git diff --quiet pkgs/reliquary-archiver/manifest.json; then
+            OLD_REV=$(git show HEAD:pkgs/reliquary-archiver/manifest.json | jq -r '.gameDataRev' 2>/dev/null || echo "unknown")
+            NEW_REV=$(jq -r '.gameDataRev' pkgs/reliquary-archiver/manifest.json)
+            
+            git add pkgs/reliquary-archiver/manifest.json
+            git commit -m "reliquary-archiver: update resource (${OLD_REV:0:7} -> ${NEW_REV:0:7})"
             git push
           else
             echo "No changes to commit"

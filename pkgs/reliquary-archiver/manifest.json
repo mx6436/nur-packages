@@ -1,6 +1,6 @@
 {
   "gameDataRev": "04483c6929478d5fe0b43b997cdb5846117e130d",
-  "resources": {
+  "files": {
     "AvatarConfig.json": "sha256-H8p05PTezJ3Ewx9hytLWknGNWh/mTWbHowq0p2r4444=",
     "AvatarConfigLD.json": "sha256-vUbEta5WhV4YAX1lu1Vya3ey0jqztIexW4KV0mVfR0g=",
     "EquipmentConfig.json": "sha256-9vW0g5ND681lv65YU2pjPfMJZEg9WUqbkkxNHj5ysfY=",

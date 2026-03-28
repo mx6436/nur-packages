@@ -10,18 +10,18 @@
 }:
 
 let
-  sources = lib.importJSON ./sources.json;
+  manifest = lib.importJSON ./manifest.json;
 
-  baseUrl = "https://gitlab.com/Dimbreath/turnbasedgamedata/-/raw/${sources.gameDataRev}";
+  baseUrl = "https://gitlab.com/Dimbreath/turnbasedgamedata/-/raw/${manifest.gameDataRev}";
 
-  resources = lib.mapAttrs (
+  files = lib.mapAttrs (
     name: hash:
     let
       url =
         if name == "TextMapEN.json" then "${baseUrl}/TextMap/${name}" else "${baseUrl}/ExcelOutput/${name}";
     in
     fetchurl { inherit name url hash; }
-  ) sources.resources;
+  ) manifest.files;
 in
 
 rustPlatform.buildRustPackage (finalAttrs: {
@@ -47,7 +47,7 @@ rustPlatform.buildRustPackage (finalAttrs: {
   patches = [ ./fix-build.patch ];
 
   postPatch = ''
-    ${lib.concatStringsSep "\n" (lib.mapAttrsToList (name: file: "ln -s ${file} ${name}") resources)}
+    ${lib.concatStringsSep "\n" (lib.mapAttrsToList (name: file: "ln -s ${file} ${name}") files)}
   '';
 
   passthru.updateScript = ./update.fish;
