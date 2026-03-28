@@ -1,6 +1,7 @@
 {
   lib,
   stdenv,
+  stdenvNoCC,
   callPackage,
   wrapGAppsHook3,
   glib-networking,
@@ -96,7 +97,7 @@ let
 
 in
 
-stdenv.mkDerivation {
+stdenvNoCC.mkDerivation {
   pname = "sjmcl";
   inherit (unwrapped) version;
 
@@ -106,7 +107,7 @@ stdenv.mkDerivation {
     wrapGAppsHook3
   ];
 
-  BuildInputs = lib.optionals stdenv.hostPlatform.isLinux [
+  buildInputs = lib.optionals stdenv.hostPlatform.isLinux [
     glib-networking
   ];
 
@@ -123,6 +124,8 @@ stdenv.mkDerivation {
 
   preFixup = lib.optionalString stdenv.hostPlatform.isLinux ''
     gappsWrapperArgs+=(
+      # Ensure tauri deep-link runtime registration writes Exec to the wrapped launcher.
+      --set APPIMAGE "$out/bin/SJMCL"
       --prefix LD_LIBRARY_PATH : ${addDriverRunpath.driverLink}/lib
       --prefix LD_LIBRARY_PATH : ${lib.makeLibraryPath runtimeLibs}
       --prefix PATH : ${lib.makeBinPath runtimePrograms}

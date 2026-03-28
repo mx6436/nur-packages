@@ -15,21 +15,21 @@
 
 rustPlatform.buildRustPackage (finalAttrs: {
   pname = "sjmcl-unwrapped";
-  version = "0.8.2";
+  version = "0.8.3";
 
   src = fetchFromGitHub {
     owner = "UNIkeEN";
     repo = "SJMCL";
     rev = "v${finalAttrs.version}";
-    hash = "sha256-9F6AaCKmxKHJdXy7KyAat3LgEpXWfmKuHL2kNAdlgkE=";
+    hash = "sha256-w+/qr+jndkyfjKyCaVPQnarUROahD7xEWY06nlc4jZM=";
   };
 
-  cargoHash = "sha256-ko6MQoCNRxSDMJZUG4tTbZIGO/PvkZE6JF51rKpnKzI=";
+  cargoHash = "sha256-kui9FVuknNHtP30f08vvSjWJOaNIWvil/ruQqxtKqys=";
 
   npmDeps = fetchNpmDeps {
     name = "${finalAttrs.pname}-${finalAttrs.version}-npm-deps";
     inherit (finalAttrs) src;
-    hash = "sha256-3o16ubb0Cp41fCup6vNyY1dxwZFZ4EfB1z8ytmZkc4k=";
+    hash = "sha256-bOlKbuhyFifjnSB7eeVXAT0aVC8Vxp7DiR7D8vJE8LU=";
   };
 
   nativeBuildInputs = [
@@ -53,7 +53,7 @@ rustPlatform.buildRustPackage (finalAttrs: {
   doCheck = false; # doctests will fail
 
   meta = {
-    description = "A Minecraft launcher from @SJMC-Dev (GPL-3.0 with custom additional licenses)";
+    description = "A Minecraft launcher from @SJMC-Dev";
     homepage = "https://mc.sjtu.cn/sjmcl";
     changelog = "https://github.com/UNIkeEN/SJMCL/releases/tag/v${finalAttrs.version}";
     license = lib.licenses.gpl3Only;
