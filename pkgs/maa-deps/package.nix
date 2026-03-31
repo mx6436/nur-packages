@@ -4,6 +4,7 @@
   stdenvNoCC,
   fetchurl,
   autoPatchelfHook,
+  zlib,
   includeDebug ? false,
   version ? "2.12.1",
   maaDepsHash ? {
@@ -59,7 +60,10 @@ stdenvNoCC.mkDerivation {
 
   nativeBuildInputs = [ autoPatchelfHook ];
 
-  buildInputs = [ stdenv.cc.cc.lib ];
+  buildInputs = [
+    stdenv.cc.cc.lib
+    zlib
+  ];
 
   installPhase = ''
     runHook preInstall
