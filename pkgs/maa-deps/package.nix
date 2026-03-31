@@ -66,11 +66,11 @@ stdenv.mkDerivation {
   installPhase = ''
     runHook preInstall
 
-    mkdir -p "$out"
-    tar -xJf ${runtimeTar} -C "$out"
-    tar -xJf ${develTar} -C "$out"
+    mkdir -p "$out/lib"
+    tar -xJf ${runtimeTar} -C "$out/lib"
+    tar -xJf ${develTar} -C "$out/lib"
     ${lib.optionalString includeDebug ''
-      tar -xJf ${dbgTar} -C "$out"
+      tar -xJf ${dbgTar} -C "$out/lib"
     ''}
 
     runHook postInstall
