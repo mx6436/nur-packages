@@ -1,7 +1,9 @@
 {
   lib,
+  stdenv,
   stdenvNoCC,
   fetchurl,
+  autoPatchelfHook,
   unzip,
 }:
 
@@ -11,7 +13,12 @@ stdenvNoCC.mkDerivation (finalAttrs: {
 
   dontUnpack = true;
 
-  nativeBuildInputs = [ unzip ];
+  nativeBuildInputs = [
+    autoPatchelfHook
+    unzip
+  ];
+
+  buildInputs = [ stdenv.cc.cc.lib ];
 
   src = fetchurl {
     url = "https://github.com/MaaXYZ/MaaFramework/releases/download/v${finalAttrs.version}/MAA-linux-${

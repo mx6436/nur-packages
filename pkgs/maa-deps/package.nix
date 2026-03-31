@@ -1,7 +1,9 @@
 {
   lib,
+  stdenv,
   stdenvNoCC,
   fetchurl,
+  autoPatchelfHook,
   includeDebug ? false,
   version ? "2.12.1",
   maaDepsHash ? {
@@ -54,6 +56,10 @@ stdenvNoCC.mkDerivation {
   inherit version;
 
   dontUnpack = true;
+
+  nativeBuildInputs = [ autoPatchelfHook ];
+
+  buildInputs = [ stdenv.cc.cc.lib ];
 
   installPhase = ''
     runHook preInstall
