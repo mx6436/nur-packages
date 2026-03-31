@@ -1,7 +1,6 @@
 {
   lib,
   stdenv,
-  stdenvNoCC,
   fetchurl,
   autoPatchelfHook,
   zlib,
@@ -22,7 +21,7 @@
 }:
 
 let
-  system = stdenvNoCC.hostPlatform.system;
+  system = stdenv.hostPlatform.system;
 
   triplet =
     if system == "x86_64-linux" then
@@ -52,7 +51,7 @@ let
   dbgTar = mkAsset "dbg" selectedHashes.dbg;
 in
 
-stdenvNoCC.mkDerivation {
+stdenv.mkDerivation {
   pname = "maa-deps";
   inherit version;
 
@@ -61,7 +60,6 @@ stdenvNoCC.mkDerivation {
   nativeBuildInputs = [ autoPatchelfHook ];
 
   buildInputs = [
-    stdenv.cc.cc.lib
     zlib
   ];
 

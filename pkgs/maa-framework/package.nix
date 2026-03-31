@@ -1,14 +1,13 @@
 {
   lib,
   stdenv,
-  stdenvNoCC,
   fetchurl,
   autoPatchelfHook,
   unzip,
   zlib,
 }:
 
-stdenvNoCC.mkDerivation (finalAttrs: {
+stdenv.mkDerivation (finalAttrs: {
   pname = "maa-framework";
   version = "5.9.2";
 
@@ -20,7 +19,6 @@ stdenvNoCC.mkDerivation (finalAttrs: {
   ];
 
   buildInputs = [
-    stdenv.cc.cc.lib
     zlib
   ];
 
@@ -30,14 +28,14 @@ stdenvNoCC.mkDerivation (finalAttrs: {
         x86_64-linux = "x86_64";
         aarch64-linux = "aarch64";
       }
-      .${stdenvNoCC.hostPlatform.system}
+      .${stdenv.hostPlatform.system}
     }-v${finalAttrs.version}.zip";
     hash =
       {
         x86_64-linux = "sha256-Tox4eBULt06zZPikY/xPFWd54QR/XVKbSyvNgvssRdI=";
         aarch64-linux = "sha256-g4XUmYS93mqSDMNvEoGMclSR7qUp2lJojKFZHP6nLXM=";
       }
-      .${stdenvNoCC.hostPlatform.system};
+      .${stdenv.hostPlatform.system};
   };
 
   installPhase = ''
