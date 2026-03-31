@@ -24,6 +24,13 @@
   },
 }:
 
+let
+  gnuTriplet = {
+    x86_64-linux = "x86_64-linux-gnu";
+    aarch64-linux = "aarch64-linux-gnu";
+  }.${stdenv.hostPlatform.system};
+in
+
 stdenv.mkDerivation (finalAttrs: {
   pname = "maa-framework";
   version = "5.9.2";
@@ -62,6 +69,11 @@ stdenv.mkDerivation (finalAttrs: {
     unzip -q "$src" -d "$out"
 
     runHook postInstall
+  '';
+
+  preFixup = ''
+    addAutoPatchelfSearchPath "$out/bin"
+    addAutoPatchelfSearchPath "${maa-deps}/lib/x-tools/${gnuTriplet}/${gnuTriplet}/lib64"
   '';
 
   meta = {
