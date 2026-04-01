@@ -51,14 +51,18 @@ clangStdenv.mkDerivation (finalAttrs: {
 
   # remove the dependency on MaaDeps, which is replaced by the above buildInputs
   postPatch = ''
-    substituteInPlace source/MaaUtils/MaaUtils.cmake \
-      --replace-fail 'include(''${MAADEPS_DIR}/maadeps.cmake)' ""
+    substituteInPlace source/MaaUtils/MaaUtils.cmake --replace-fail \
+      'include(''${MAADEPS_DIR}/maadeps.cmake)' ""
 
-    substituteInPlace source/MaaUtils/cmake/utils.cmake \
-      --replace-fail 'detect_maadeps_triplet(MAADEPS_TRIPLET)' ""
+    substituteInPlace source/MaaUtils/cmake/utils.cmake --replace-fail \
+      'detect_maadeps_triplet(MAADEPS_TRIPLET)' ""
 
-    substituteInPlace CMakeLists.txt \
-      --replace-fail 'maadeps_install(bin)' ""
+    substituteInPlace CMakeLists.txt --replace-fail \
+      'maadeps_install(bin)' ""
+
+    substituteInPlace source/MaaUtils/MaaUtils.cmake --replace-fail \
+      "OpenCV REQUIRED COMPONENTS core imgproc imgcodecs" \
+      "OpenCV REQUIRED COMPONENTS core imgproc imgcodecs features2d calib3d flann"
   '';
 
   # TODO: add a wrapper for plugins
@@ -78,6 +82,10 @@ clangStdenv.mkDerivation (finalAttrs: {
   cmakeFlags = [
     "-DWITH_RPATH_LIBRARY=OFF" # Maa by default copies libraries to output
     "-DMAA_HASH_VERSION=${finalAttrs.version}"
+    "-DBUILD_PICLI=OFF"
+    "-DWITH_WIN32_CONTROLLER=OFF"
+    "-DWITH_PLAYCOVER_CONTROLLER=OFF"
+    "-DWITH_GAMEPAD_CONTROLLER=OFF" # supports only windows
   ];
 
   meta = {
