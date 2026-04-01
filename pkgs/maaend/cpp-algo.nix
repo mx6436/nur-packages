@@ -47,6 +47,10 @@ clangStdenv.mkDerivation (finalAttrs: {
     zlib
   ];
 
+  patches = [
+    ./cpp-algo-path.patch
+  ];
+
   # remove the dependency on MaaDeps, which is replaced by the above buildInputs
   postPatch = ''
     substituteInPlace MaaUtils/MaaUtils.cmake \

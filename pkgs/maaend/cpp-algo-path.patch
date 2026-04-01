@@ -1,0 +1,44 @@
+diff --git a/source/main.cpp b/source/main.cpp
+index 3771961a..a16ef6c1 100644
+--- a/source/main.cpp
++++ b/source/main.cpp
+@@ -1,4 +1,6 @@
+ #include <iostream>
++#include <cstdlib>
++#include <filesystem>
+ 
+ #include <MaaAgentServer/MaaAgentServerAPI.h>
+ #include <MaaToolkit/MaaToolkitAPI.h>
+@@ -8,6 +10,21 @@
+ #include "my_reco_1/my_reco_1.h"
+ #include "utils.h"
+ 
++namespace {
++std::filesystem::path getToolkitUserPath()
++{
++    if (const char* xdg_data_home = std::getenv("XDG_DATA_HOME"); xdg_data_home && *xdg_data_home) {
++        return std::filesystem::path(xdg_data_home) / "mxu" / "debug" / "cpp-algo";
++    }
++
++    if (const char* home = std::getenv("HOME"); home && *home) {
++        return std::filesystem::path(home) / ".local" / "share" / "mxu" / "debug" / "cpp-algo";
++    }
++
++    return std::filesystem::path(".") / "debug" / "cpp-algo";
++}
++}
++
+ int main(int argc, char** argv)
+ {
+ #ifdef _WIN32
+@@ -24,7 +41,9 @@ int main(int argc, char** argv)
+ 
+     // std::cout << "Hello, cpp-algo!" << std::endl;
+ 
+-    MaaToolkitConfigInitOption("./debug/cpp-algo", "{}");
++    const std::filesystem::path toolkit_user_path = getToolkitUserPath();
++    const std::string toolkit_user_path_str = toolkit_user_path.string();
++    MaaToolkitConfigInitOption(toolkit_user_path_str.c_str(), "{}");
+ 
+     MaaAgentServerRegisterCustomRecognition("MyReco1", ChildCustomRecognitionCallback, nullptr);
+     MaaAgentServerRegisterCustomRecognition("MapLocateRecognition", maplocator::MapLocateRecognitionRun, nullptr);

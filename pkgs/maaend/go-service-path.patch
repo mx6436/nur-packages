@@ -1,0 +1,45 @@
+diff --git a/agent/go-service/logger.go b/agent/go-service/logger.go
+index e32047dd..14465aca 100644
+--- a/agent/go-service/logger.go
++++ b/agent/go-service/logger.go
+@@ -27,8 +27,26 @@ func (w *levelFilterWriter) WriteLevel(level zerolog.Level, p []byte) (n int, er
+ 	return len(p), nil
+ }
+ 
++func getMxuDataDir() string {
++	xdgDataHome := os.Getenv("XDG_DATA_HOME")
++	if xdgDataHome != "" {
++		return filepath.Join(xdgDataHome, "mxu")
++	}
++
++	homeDir, err := os.UserHomeDir()
++	if err != nil || homeDir == "" {
++		return "."
++	}
++
++	return filepath.Join(homeDir, ".local", "share", "mxu")
++}
++
++func getDebugDir() string {
++	return filepath.Join(getMxuDataDir(), "debug")
++}
++
+ func initLogger() (*os.File, error) {
+-	debugDir := filepath.Join(".", "debug")
++	debugDir := getDebugDir()
+ 	if err := os.MkdirAll(debugDir, 0755); err != nil {
+ 		return nil, err
+ 	}
+diff --git a/agent/go-service/main.go b/agent/go-service/main.go
+index cfecee0b..42f4a27e 100644
+--- a/agent/go-service/main.go
++++ b/agent/go-service/main.go
+@@ -56,7 +56,7 @@ func main() {
+ 		Msg("MAA framework initialized")
+ 
+ 	// Initialize toolkit config option
+-	userPath := getCwd()
++	userPath := getMxuDataDir()
+ 	if err := maa.ConfigInitOption(userPath, "{}"); err != nil {
+ 		log.Warn().
+ 			Str("userPath", userPath).

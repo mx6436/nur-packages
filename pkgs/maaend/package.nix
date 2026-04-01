@@ -83,11 +83,6 @@ stdenvNoCC.mkDerivation (finalAttrs: {
     webkitgtk_4_1
   ];
 
-  postPatch = ''
-    substituteInPlace assets/interface.json --replace-fail \
-      "114514.0.0" "${finalAttrs.version}"
-  '';
-
   installPhase = ''
     runHook preInstall
 
@@ -111,6 +106,9 @@ stdenvNoCC.mkDerivation (finalAttrs: {
     cp -r $src/assets/* $out/lib/
     cp $src/README.md $out/lib/
     cp $src/LICENSE $out/lib/
+
+    substituteInPlace $out/lib/interface.json --replace-fail \
+      "114514.0.0" "${finalAttrs.version}"
 
     # Desktop entry
     mkdir -p $out/share/applications
