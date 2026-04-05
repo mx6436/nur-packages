@@ -4,7 +4,6 @@
   fetchFromGitHub,
   stdenvNoCC,
 
-  jq,
   wrapGAppsHook3,
   glib-networking,
   libayatana-appindicator,
@@ -20,13 +19,13 @@
 
 let
   pname = "maaend";
-  version = "2.3.0";
+  version = "2.4.0";
 
   src = fetchFromGitHub {
     owner = "MaaEnd";
     repo = "MaaEnd";
     rev = "v${version}";
-    hash = "sha256-+CdlQPkTBgCuBbTmww+ree6vX2VcX+Z0mxEWXa4khe8=";
+    hash = "sha256-VRFRzJioNc/HJFWh1r3EBSndPv5kJs77lsDGxpnREGU=";
     fetchSubmodules = true;
   };
 
@@ -72,7 +71,6 @@ stdenvNoCC.mkDerivation (finalAttrs: {
 
   nativeBuildInputs = [
     wrapGAppsHook3
-    jq
   ];
 
   buildInputs = [
@@ -107,8 +105,9 @@ stdenvNoCC.mkDerivation (finalAttrs: {
     cp $src/README.md $out/lib/
     cp $src/LICENSE $out/lib/
 
+    # write version to interface.json
     substituteInPlace $out/lib/interface.json --replace-fail \
-      "114514.0.0" "${finalAttrs.version}"
+      "0.1.0" "${finalAttrs.version}"
 
     # Desktop entry
     mkdir -p $out/share/applications
