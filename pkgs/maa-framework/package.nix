@@ -20,14 +20,14 @@
 
 clangStdenv.mkDerivation (finalAttrs: {
   pname = "maa-framework";
-  version = "5.9.2";
+  version = "5.10.0";
 
   src = fetchFromGitHub {
     owner = "MaaXYZ";
     repo = "MaaFramework";
     rev = "v${finalAttrs.version}";
     fetchSubmodules = true;
-    sha256 = "sha256-m3vRKiWfxDaJjvcoi0n29DuIvKQW/jsU/F8soG26KV8=";
+    sha256 = "sha256-Xl8kr8+ThOUynu8ArXSYTHlYgWHIyeOieGrMZUZOt/s=";
   };
 
   nativeBuildInputs = [
@@ -85,6 +85,7 @@ clangStdenv.mkDerivation (finalAttrs: {
     "-DBUILD_PICLI=OFF"
     "-DWITH_WIN32_CONTROLLER=OFF"
     "-DWITH_PLAYCOVER_CONTROLLER=OFF"
+    "-DWITH_ANDROID_NATIVE_CONTROLLER=OFF"
     "-DWITH_GAMEPAD_CONTROLLER=OFF" # supports only windows
   ];
 
