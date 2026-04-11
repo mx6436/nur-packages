@@ -20,16 +20,16 @@
 
 rustPlatform.buildRustPackage (finalAttrs: {
   pname = "mxu";
-  version = "1.21.3";
+  version = "1.23.0";
 
   src = fetchFromGitHub {
     owner = "MistEO";
     repo = "MXU";
     rev = "v${finalAttrs.version}";
-    hash = "sha256-YU0Klo8kzejeDgINKMWecOOtJgBEdrrAVnVXoRu70kc=";
+    hash = "sha256-CgGhSRWRL6E5fePkEb0iFdhYMjewC1GtBASQp0X7uj0=";
   };
 
-  cargoHash = "sha256-EE7Lj4IVN0ZPF7Fg2QdlngXTH+u5ttQv3Vv+P0xKv4c=";
+  cargoHash = "sha256-krNUNg8q/lbRFl8xMw0PwftxRKjhj03DkOvTsU6SVUc=";
   cargoRoot = "src-tauri";
   buildAndTestSubdir = finalAttrs.cargoRoot;
 
@@ -72,10 +72,6 @@ rustPlatform.buildRustPackage (finalAttrs: {
     openssl
     webkitgtk_4_1
   ];
-
-  # buildType = "debug";
-
-  # tauriBuildFlags = [ "--debug" ];
 
   defaultTauriBundleType = "deb";
 
