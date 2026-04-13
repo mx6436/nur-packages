@@ -20,14 +20,14 @@
 
 clangStdenv.mkDerivation (finalAttrs: {
   pname = "maa-framework";
-  version = "5.10.0";
+  version = "5.10.1";
 
   src = fetchFromGitHub {
     owner = "MaaXYZ";
     repo = "MaaFramework";
     rev = "v${finalAttrs.version}";
     fetchSubmodules = true;
-    sha256 = "sha256-Xl8kr8+ThOUynu8ArXSYTHlYgWHIyeOieGrMZUZOt/s=";
+    sha256 = "sha256-pTXUWyn01N+jp43S2/Lx52/8aqgXkCPDOpyZE4dM7Fg=";
   };
 
   nativeBuildInputs = [
