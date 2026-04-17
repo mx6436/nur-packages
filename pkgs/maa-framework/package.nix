@@ -49,6 +49,10 @@ clangStdenv.mkDerivation (finalAttrs: {
     zlib
   ];
 
+  patches = [
+    ./cli-path.patch
+  ];
+
   # remove the dependency on MaaDeps, which is replaced by the above buildInputs
   postPatch = ''
     substituteInPlace source/MaaUtils/MaaUtils.cmake --replace-fail \
@@ -69,7 +73,7 @@ clangStdenv.mkDerivation (finalAttrs: {
   postInstall = ''
     mkdir -p $out/lib/plugins
     mv $out/bin/*.so $out/lib
-    ln -s $out/lib/*.so $out/bin
+    ln -s $out/lib/*.so $out/bin # Required
   '';
 
   # $out/share/MaaAgentBinary do not need to be patched
@@ -82,7 +86,6 @@ clangStdenv.mkDerivation (finalAttrs: {
   cmakeFlags = [
     "-DWITH_RPATH_LIBRARY=OFF" # Maa by default copies libraries to output
     "-DMAA_HASH_VERSION=${finalAttrs.version}"
-    "-DBUILD_PICLI=OFF"
     "-DWITH_WIN32_CONTROLLER=OFF"
     "-DWITH_PLAYCOVER_CONTROLLER=OFF"
     "-DWITH_ANDROID_NATIVE_CONTROLLER=OFF"

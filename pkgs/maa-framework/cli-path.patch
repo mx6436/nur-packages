@@ -1,0 +1,64 @@
+diff --git a/source/MaaPiCli/CLI/main.cpp b/source/MaaPiCli/CLI/main.cpp
+index 6022f6ae..d4bc2867 100644
+--- a/source/MaaPiCli/CLI/main.cpp
++++ b/source/MaaPiCli/CLI/main.cpp
+@@ -1,5 +1,7 @@
+ #include <csignal>
++#include <cstdlib>
+ #include <format>
++#include <filesystem>
+ #include <iostream>
+ 
+ #include "MaaToolkit/MaaToolkitAPI.h"
+@@ -38,6 +40,40 @@ extern "C" void sig_handler(int sig)
+     exit(0);
+ }
+ 
++std::filesystem::path get_picli_data_path()
++{
++    if (const char* xdg_data_home = std::getenv("XDG_DATA_HOME");
++        xdg_data_home != nullptr && xdg_data_home[0] != '\0') {
++        return std::filesystem::path(xdg_data_home) / "MaaPiCli";
++    }
++
++    if (const char* home = std::getenv("HOME"); home != nullptr && home[0] != '\0') {
++        return std::filesystem::path(home) / ".local" / "share" / "MaaPiCli";
++    }
++
++    return std::filesystem::current_path() / "MaaPiCli";
++}
++
++std::filesystem::path get_resource_path(char* argv0)
++{
++    if (argv0 == nullptr || argv0[0] == '\0') {
++        return MAA_NS::library_dir();
++    }
++
++    std::error_code ec;
++    std::filesystem::path exe_path = std::filesystem::absolute(argv0, ec);
++    if (ec) {
++        return MAA_NS::library_dir();
++    }
++
++    exe_path = std::filesystem::weakly_canonical(exe_path, ec);
++    if (ec) {
++        return MAA_NS::library_dir();
++    }
++
++    return exe_path.parent_path();
++}
++
+ int main(int argc, char** argv)
+ {
+     std::signal(SIGTERM, sig_handler);
+@@ -56,8 +92,8 @@ int main(int argc, char** argv)
+         break;
+     }
+ 
+-    std::string user_path = MAA_NS::path_to_utf8_string(MAA_NS::library_dir());
+-    std::string resource_path = MAA_NS::path_to_utf8_string(MAA_NS::library_dir());
++    std::string user_path = MAA_NS::path_to_utf8_string(get_picli_data_path());
++    std::string resource_path = MAA_NS::path_to_utf8_string(get_resource_path(argv[0]));
+ 
+     MaaToolkitConfigInitOption(user_path.c_str(), "{}");
+ 

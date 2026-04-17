@@ -97,7 +97,7 @@ stdenvNoCC.mkDerivation (finalAttrs: {
     cp ${go-service}/bin/go-service $out/lib/agent/go-service
     cp ${cpp-algo}/agent/cpp-algo $out/lib/agent/cpp-algo
 
-    # cp ${maa-framework}/bin/MaaPiCli $out/lib/maafw/
+    cp ${maa-framework}/bin/MaaPiCli $out/lib/MaaPiCli
     ln -s ${maa-framework}/lib/* $out/lib/maafw
     ln -s ${maa-framework}/share/MaaAgentBinary $out/lib/maafw/MaaAgentBinary
 
