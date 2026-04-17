@@ -20,16 +20,16 @@
 
 rustPlatform.buildRustPackage (finalAttrs: {
   pname = "mxu";
-  version = "1.23.0";
+  version = "2.0.1";
 
   src = fetchFromGitHub {
     owner = "MistEO";
     repo = "MXU";
     rev = "v${finalAttrs.version}";
-    hash = "sha256-CgGhSRWRL6E5fePkEb0iFdhYMjewC1GtBASQp0X7uj0=";
+    hash = "sha256-ZHC8byq8FJgO2/OdEQuvmlO/52t79cOwm76u0UHMIkk=";
   };
 
-  cargoHash = "sha256-krNUNg8q/lbRFl8xMw0PwftxRKjhj03DkOvTsU6SVUc=";
+  cargoHash = "sha256-Xd0RMzG7+M/nJvPz5sfPG8rt3s/AC09Ea1u5ma/l5ww=";
   cargoRoot = "src-tauri";
   buildAndTestSubdir = finalAttrs.cargoRoot;
 
@@ -37,7 +37,7 @@ rustPlatform.buildRustPackage (finalAttrs: {
     inherit (finalAttrs) pname version src;
     fetcherVersion = 3;
     pnpm = pnpm_10;
-    hash = "sha256-uzmNEimPNf8XHNXQfnWRwb+0A6Q8XaNQJttwHoG9RvQ=";
+    hash = "sha256-Lt2fRAhEO4nmBmNG6TqBURRLfvLghhVIokVsqbL9Ufg=";
   };
 
   patches = [
