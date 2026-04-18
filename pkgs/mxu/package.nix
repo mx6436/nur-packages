@@ -20,13 +20,13 @@
 
 rustPlatform.buildRustPackage (finalAttrs: {
   pname = "mxu";
-  version = "2.0.1";
+  version = "2.1.1";
 
   src = fetchFromGitHub {
     owner = "MistEO";
     repo = "MXU";
     rev = "v${finalAttrs.version}";
-    hash = "sha256-ZHC8byq8FJgO2/OdEQuvmlO/52t79cOwm76u0UHMIkk=";
+    hash = "sha256-+8qsusrmZszXuEkNEj4/h70gnzj4a5S9caonePLw5U8=";
   };
 
   cargoHash = "sha256-Xd0RMzG7+M/nJvPz5sfPG8rt3s/AC09Ea1u5ma/l5ww=";
