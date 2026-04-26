@@ -38,10 +38,10 @@ rustPlatform.buildRustPackage (finalAttrs: {
   };
 
   patches = [
-    # mxu use executable directory as data directory, which is not allowed in Nix store.
-    # This patch changes data directory to XDG data dir.
-    ./linux-data-dir.patch
-    ./tauri-capability.patch
+    # Read app data dir from MXU_DATA_DIR / XDG_DATA_HOME / HOME.
+    ./0001-data-dir.patch
+    # Allow plugin-fs access to MXU data directories.
+    ./0002-capability.patch
   ];
 
   # write version to config files, as what they should be

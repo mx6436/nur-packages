@@ -1,32 +1,18 @@
-From 717bc4ff6a93c1485ed42a92f9fdcb3e0dbadedd Mon Sep 17 00:00:00 2001
-From: mx6436 <mx6436@foxmail.com>
-Date: Mon, 30 Mar 2026 19:49:12 +0800
-Subject: [PATCH] feat(linux): prefer XDG data dir for app data and logs
-
-Use Linux-specific app data directory resolution to avoid writing logs into read-only executable locations in packaged environments.
-
-Priority is now: MXU_DATA_DIR > XDG_DATA_HOME/mxu > ~/.local/share/mxu > executable-directory fallback.
-
-Keep existing behavior unchanged on macOS and other non-Linux targets.
----
- src-tauri/src/commands/utils.rs | 34 ++++++++++++++++++++++++++++++---
- 1 file changed, 31 insertions(+), 3 deletions(-)
-
 diff --git a/src-tauri/src/commands/utils.rs b/src-tauri/src/commands/utils.rs
-index e8467ea..310a43a 100644
+index d1ad39e..c5a6804 100644
 --- a/src-tauri/src/commands/utils.rs
 +++ b/src-tauri/src/commands/utils.rs
-@@ -19,7 +19,8 @@ pub fn emit_callback_event<S: Into<String>>(app: &AppHandle, message: S, details
+@@ -151,7 +151,8 @@ pub fn emit_config_changed(app: &AppHandle) {
  
  /// 获取应用数据目录
  /// - macOS: ~/Library/Application Support/MXU/
 -/// - Windows/Linux: exe 所在目录（保持便携式部署）
-+/// - Linux: MXU_DATA_DIR > XDG_DATA_HOME/mxu > ~/.local/share/mxu > exe 所在目录
++/// - Linux: 遵循 XDG Base Directory 规范
 +/// - Windows: exe 所在目录（保持便携式部署）
  pub fn get_app_data_dir() -> Result<PathBuf, String> {
      #[cfg(target_os = "macos")]
      {
-@@ -31,9 +32,36 @@ pub fn get_app_data_dir() -> Result<PathBuf, String> {
+@@ -163,9 +164,35 @@ pub fn get_app_data_dir() -> Result<PathBuf, String> {
          Ok(path)
      }
  
@@ -44,19 +30,18 @@ index e8467ea..310a43a 100644
 +        if let Ok(path) = std::env::var("XDG_DATA_HOME") {
 +            let trimmed = path.trim();
 +            if !trimmed.is_empty() {
-+                return Ok(PathBuf::from(trimmed).join("mxu"));
++                return Ok(PathBuf::from(trimmed).join("MXU"));
 +            }
 +        }
 +
 +        if let Ok(home) = std::env::var("HOME") {
 +            let trimmed = home.trim();
 +            if !trimmed.is_empty() {
-+                return Ok(PathBuf::from(trimmed).join(".local").join("share").join("mxu"));
++                return Ok(PathBuf::from(trimmed).join(".local").join("share").join("MXU"));
 +            }
 +        }
 +
-+        // 回退到原有便携式逻辑
-+        get_exe_directory()
++        Err("无法解析 Linux 数据目录：请设置 HOME 或 XDG_DATA_HOME".to_string())
 +    }
 +
 +    #[cfg(all(not(target_os = "macos"), not(target_os = "linux")))]
@@ -65,6 +50,3 @@ index e8467ea..310a43a 100644
          get_exe_directory()
      }
  }
--- 
-2.53.0
-

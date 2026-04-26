@@ -1,0 +1,52 @@
+diff --git a/src-tauri/capabilities/default.json b/src-tauri/capabilities/default.json
+index 5e25431..c9ed652 100644
+--- a/src-tauri/capabilities/default.json
++++ b/src-tauri/capabilities/default.json
+@@ -40,22 +40,42 @@
+     },
+     {
+       "identifier": "fs:allow-exists",
+-      "allow": [{ "path": "**/*" }]
++      "allow": [
++        { "path": "**/*" },
++        { "path": "$XDG_DATA_HOME/MXU/**" },
++        { "path": "$HOME/.local/share/MXU/**" },
++        { "path": "$MXU_DATA_DIR/**" }
++      ]
+     },
+     {
+       "identifier": "fs:allow-read-text-file",
+-      "allow": [{ "path": "**/*" }]
++      "allow": [
++        { "path": "**/*" },
++        { "path": "$XDG_DATA_HOME/MXU/**" },
++        { "path": "$HOME/.local/share/MXU/**" },
++        { "path": "$MXU_DATA_DIR/**" }
++      ]
+     },
+     {
+       "identifier": "fs:allow-write-text-file",
+-      "allow": [{ "path": "**/*" }]
++      "allow": [
++        { "path": "**/*" },
++        { "path": "$XDG_DATA_HOME/MXU/**" },
++        { "path": "$HOME/.local/share/MXU/**" },
++        { "path": "$MXU_DATA_DIR/**" }
++      ]
+     },
+     {
+       "identifier": "fs:allow-write-file",
+       "allow": [{ "path": "**/*" }]
+     },
+     {
+       "identifier": "fs:allow-mkdir",
+-      "allow": [{ "path": "**/*" }]
++      "allow": [
++        { "path": "**/*" },
++        { "path": "$XDG_DATA_HOME/MXU/**" },
++        { "path": "$HOME/.local/share/MXU/**" },
++        { "path": "$MXU_DATA_DIR/**" }
++      ]
+     },
+     {
+       "identifier": "fs:allow-remove",
