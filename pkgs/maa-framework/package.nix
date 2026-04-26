@@ -67,13 +67,15 @@ clangStdenv.mkDerivation (finalAttrs: {
     substituteInPlace source/MaaUtils/MaaUtils.cmake --replace-fail \
       "OpenCV REQUIRED COMPONENTS core imgproc imgcodecs" \
       "OpenCV REQUIRED COMPONENTS core imgproc imgcodecs features2d calib3d flann"
+
+    while IFS= read -r f; do
+      substituteInPlace "$f" --replace-fail "LIBRARY DESTINATION bin" "LIBRARY DESTINATION lib"
+    done < <(grep -R -l --include='CMakeLists.txt' "LIBRARY DESTINATION bin" .)
   '';
 
   # TODO: add a wrapper for plugins
   postInstall = ''
     mkdir -p $out/lib/plugins
-    mv $out/bin/*.so $out/lib
-    ln -s $out/lib/*.so $out/bin # Required
   '';
 
   # $out/share/MaaAgentBinary do not need to be patched
