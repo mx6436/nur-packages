@@ -4,17 +4,11 @@
   fetchFromGitHub,
   stdenvNoCC,
 
-  wrapGAppsHook3,
-  glib-networking,
-  libayatana-appindicator,
-  libsoup_3,
-  openssl,
-  webkitgtk_4_1,
-
-  maa-framework ? callPackage ../maa-framework/package.nix { },
-  mxu ? callPackage ../mxu/package.nix { },
-
   android-tools,
+  libayatana-appindicator,
+  maa-framework ? callPackage ../maa-framework/package.nix { },
+  mxu-unwrapped ? callPackage ../mxu-unwrapped/package.nix { },
+  wrapGAppsHook3,
 }:
 
 let
@@ -73,14 +67,6 @@ stdenvNoCC.mkDerivation (finalAttrs: {
     wrapGAppsHook3
   ];
 
-  buildInputs = [
-    glib-networking
-    libayatana-appindicator
-    libsoup_3
-    openssl
-    webkitgtk_4_1
-  ];
-
   installPhase = ''
     runHook preInstall
 
@@ -89,10 +75,10 @@ stdenvNoCC.mkDerivation (finalAttrs: {
 
     # This can't be symbol linked. It will find resource in its runtime path.
     # `mxu` is a wrapper script, copying it is no use. We need to copy the wrapped binary and wrap it again.
-    cp ${mxu}/bin/.mxu-wrapped $out/lib/.mxu-wrapped
+    cp ${mxu-unwrapped}/bin/mxu $out/lib/mxu
 
     # This will be wrapped by wrapGAppsHook3
-    ln -s $out/lib/.mxu-wrapped $out/bin/MaaEnd
+    ln -s $out/lib/mxu $out/bin/MaaEnd
 
     cp ${go-service}/bin/go-service $out/lib/agent/go-service
     cp ${cpp-algo}/agent/cpp-algo $out/lib/agent/cpp-algo

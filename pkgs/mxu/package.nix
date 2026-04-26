@@ -1,92 +1,39 @@
 {
+  callPackage,
   lib,
-  fetchFromGitHub,
-  fetchPnpmDeps,
-
-  cargo-tauri,
-  nodejs,
-  pnpm_10,
-  pnpmConfigHook,
-  pkg-config,
-  rustPlatform,
-  wrapGAppsHook3,
-
-  glib-networking,
   libayatana-appindicator,
-  libsoup_3,
-  openssl,
-  webkitgtk_4_1,
+  mxu-unwrapped ? callPackage ../mxu-unwrapped/package.nix { },
+  symlinkJoin,
+  wrapGAppsHook3,
 }:
 
-rustPlatform.buildRustPackage (finalAttrs: {
+let
+  mxu' = mxu-unwrapped;
+in
+
+symlinkJoin {
   pname = "mxu";
-  version = "2.1.1";
+  inherit (mxu') version;
 
-  src = fetchFromGitHub {
-    owner = "MistEO";
-    repo = "MXU";
-    rev = "v${finalAttrs.version}";
-    hash = "sha256-+8qsusrmZszXuEkNEj4/h70gnzj4a5S9caonePLw5U8=";
-  };
+  paths = [ mxu' ];
 
-  cargoHash = "sha256-Xd0RMzG7+M/nJvPz5sfPG8rt3s/AC09Ea1u5ma/l5ww=";
-  cargoRoot = "src-tauri";
-  buildAndTestSubdir = finalAttrs.cargoRoot;
+  nativeBuildInputs = [ wrapGAppsHook3 ];
 
-  pnpmDeps = fetchPnpmDeps {
-    inherit (finalAttrs) pname version src;
-    fetcherVersion = 3;
-    pnpm = pnpm_10;
-    hash = "sha256-Lt2fRAhEO4nmBmNG6TqBURRLfvLghhVIokVsqbL9Ufg=";
-  };
-
-  patches = [
-    # mxu use executable directory as data directory, which is not allowed in Nix store.
-    # This patch changes data directory to XDG data dir.
-    ./linux-data-dir.patch
-    ./tauri-capability.patch
-  ];
-
-  # write version to config files, as what they should be
-  postPatch = ''
-    substituteInPlace src-tauri/tauri.conf.json --replace-fail \
-      "0.1.0" "${finalAttrs.version}"
-
-    substituteInPlace src-tauri/Cargo.toml --replace-fail \
-      "0.1.0" "${finalAttrs.version}"
-  '';
-
-  nativeBuildInputs = [
-    cargo-tauri.hook
-    nodejs
-    pkg-config
-    pnpm_10
-    pnpmConfigHook
-    wrapGAppsHook3
-  ];
-
-  buildInputs = [
-    glib-networking
-    libayatana-appindicator
-    libsoup_3
-    openssl
-    webkitgtk_4_1
-  ];
-
-  defaultTauriBundleType = "deb";
-
-  preFixup = ''
+  postBuild = ''
     gappsWrapperArgs+=(
       --prefix LD_LIBRARY_PATH : ${lib.makeLibraryPath [ libayatana-appindicator ]}
     )
+    wrapGAppsHook
   '';
 
   meta = {
-    description = "MaaFramework Next UI";
-    homepage = "https://github.com/MistEO/MXU";
-    changelog = "https://github.com/MistEO/MXU/releases/tag/v${finalAttrs.version}";
-    license = lib.licenses.agpl3Only;
-    mainProgram = "mxu";
-    platforms = lib.platforms.linux;
+    inherit (mxu'.meta)
+      description
+      homepage
+      changelog
+      license
+      mainProgram
+      platforms
+      ;
   };
-})
+}
