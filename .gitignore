@@ -1,3 +1,6 @@
 result
 result-*
 
+# Runtime data directory created by MaaDebugger
+.maa/
+
