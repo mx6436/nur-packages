@@ -48,7 +48,7 @@ clangStdenv.mkDerivation (finalAttrs: {
   ];
 
   patches = [
-    ./cpp-algo-path.patch
+    ./0001-cpp-data-dir.patch
   ];
 
   # remove the dependency on MaaDeps, which is replaced by the above buildInputs
@@ -66,9 +66,13 @@ clangStdenv.mkDerivation (finalAttrs: {
 
     substituteInPlace CMakeLists.txt \
       --replace-fail "RelWithDebInfo" "Release"
+
+    substituteInPlace source/CMakeLists.txt \
+      --replace-fail "add_dependencies(cpp-algo MaaUtils)" ""
   '';
 
   cmakeFlags = [
+    "-DBUILD_MAA_UTILS=OFF"
     "-DWITH_RPATH_LIBRARY=OFF"
     "-DCMAKE_BUILD_TYPE=Release"
   ];

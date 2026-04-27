@@ -22,6 +22,6 @@ buildGoModule (finalAttrs: {
   subPackages = [ "." ];
 
   patches = [
-    ./go-service-path.patch
+    ./0002-go-data-dir.patch
   ];
 })
