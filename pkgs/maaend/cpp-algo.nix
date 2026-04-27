@@ -4,7 +4,6 @@
   src,
   meta,
 
-  callPackage,
   clangStdenv,
 
   autoPatchelfHook,
@@ -12,11 +11,9 @@
   lld,
 
   boost187,
-  fastdeploy_ppocr ? callPackage ../maa-framework/fastdeploy-ppocr.nix { },
   maa-framework,
   onnxruntime,
   opencv,
-  zlib,
 }:
 
 clangStdenv.mkDerivation (finalAttrs: {
@@ -40,40 +37,37 @@ clangStdenv.mkDerivation (finalAttrs: {
 
   buildInputs = [
     boost187
-    fastdeploy_ppocr
     maa-framework
     onnxruntime
     opencv
-    zlib
   ];
 
   patches = [
     ./0001-cpp-data-dir.patch
   ];
 
-  # remove the dependency on MaaDeps, which is replaced by the above buildInputs
   postPatch = ''
+    # Build against Nix-provided dependencies instead of MaaDeps.
     substituteInPlace MaaUtils/MaaUtils.cmake \
-      --replace-fail 'include(''${MAADEPS_DIR}/maadeps.cmake)' ""
-
+      --replace-fail 'include(''${MAADEPS_DIR}/maadeps.cmake)' "" \
+      --replace-fail "find_package(fastdeploy_ppocr REQUIRED)" "" \
+      --replace-fail "find_package(ZLIB REQUIRED)" ""
     substituteInPlace MaaUtils/cmake/utils.cmake \
       --replace-fail 'detect_maadeps_triplet(MAADEPS_TRIPLET)' ""
 
+    # Resolve framework paths from the packaged maa-framework output.
     substituteInPlace CMakeLists.txt \
-      --replace-fail \
-      'DEPS_DIR ''${CMAKE_CURRENT_SOURCE_DIR}/../../deps' \
-      'DEPS_DIR ${maa-framework}'
-
-    substituteInPlace CMakeLists.txt \
+      --replace-fail 'DEPS_DIR ''${CMAKE_CURRENT_SOURCE_DIR}/../../deps' 'DEPS_DIR ${maa-framework}' \
       --replace-fail "RelWithDebInfo" "Release"
 
+    # MaaUtils is provided by maa-framework, not this build tree.
     substituteInPlace source/CMakeLists.txt \
       --replace-fail "add_dependencies(cpp-algo MaaUtils)" ""
   '';
 
   cmakeFlags = [
     "-DBUILD_MAA_UTILS=OFF"
-    "-DWITH_RPATH_LIBRARY=OFF"
     "-DCMAKE_BUILD_TYPE=Release"
+    "-DWITH_RPATH_LIBRARY=OFF"
   ];
 })
