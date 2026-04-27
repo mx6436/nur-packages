@@ -19,12 +19,16 @@ let
     builtins.attrNames (builtins.readDir pkgRoot)
   );
 
-  # build an attrset mapping each name to its callPackage result
-  pkgAttrs = builtins.listToAttrs (
-    map (name: {
-      name = name;
-      value = pkgs.callPackage (./pkgs/${name}/package.nix) { };
-    }) pkgNames
+  # Build all packages in a shared scope so package-level dependencies
+  # can be resolved from other packages in this repository.
+  packageScope = pkgs.lib.makeScope pkgs.newScope (
+    self:
+    builtins.listToAttrs (
+      map (name: {
+        name = name;
+        value = self.callPackage (./pkgs/${name}/package.nix) { };
+      }) pkgNames
+    )
   );
 in
 
@@ -36,4 +40,4 @@ in
 }
 
 # merge in dynamically-discovered packages
-// pkgAttrs
+// packageScope

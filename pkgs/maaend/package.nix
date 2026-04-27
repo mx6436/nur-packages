@@ -6,8 +6,8 @@
 
   android-tools,
   libayatana-appindicator,
-  maa-framework ? callPackage ../maa-framework/package.nix { },
-  mxu-unwrapped ? callPackage ../mxu-unwrapped/package.nix { },
+  maa-framework,
+  mxu-unwrapped,
   wrapGAppsHook3,
 }:
 

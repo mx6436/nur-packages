@@ -15,8 +15,8 @@ in
 
     package = lib.mkOption {
       type = lib.types.package;
-      default = pkgs.callPackage ../pkgs/natfrp-service/package.nix { };
-      defaultText = lib.literalExpression "pkgs.callPackage ../pkgs/natfrp-service/package.nix { }";
+      default = pkgs.natfrp-service;
+      defaultText = lib.literalExpression "pkgs.natfrp-service";
       description = "The natfrp-service package to use.";
     };
   };
