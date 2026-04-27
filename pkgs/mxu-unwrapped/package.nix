@@ -17,16 +17,16 @@
 
 rustPlatform.buildRustPackage (finalAttrs: {
   pname = "mxu-unwrapped";
-  version = "2.1.1";
+  version = "2.1.2";
 
   src = fetchFromGitHub {
     owner = "MistEO";
     repo = "MXU";
     rev = "v${finalAttrs.version}";
-    hash = "sha256-+8qsusrmZszXuEkNEj4/h70gnzj4a5S9caonePLw5U8=";
+    hash = "sha256-G68kVsW5TJ7wViRyKunKwq0VaN6uPifg7SjvNFRs46Y=";
   };
 
-  cargoHash = "sha256-Xd0RMzG7+M/nJvPz5sfPG8rt3s/AC09Ea1u5ma/l5ww=";
+  cargoHash = "sha256-YmsSxxyOiMiIEmf3Pnh5mHEuS5vg02J3KhMCEcHtcBA=";
   cargoRoot = "src-tauri";
   buildAndTestSubdir = finalAttrs.cargoRoot;
 
