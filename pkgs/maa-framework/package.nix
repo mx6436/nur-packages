@@ -16,6 +16,8 @@
   onnxruntime,
   wayland,
   zlib,
+
+  withCli ? false,
 }:
 
 clangStdenv.mkDerivation (finalAttrs: {
@@ -49,8 +51,8 @@ clangStdenv.mkDerivation (finalAttrs: {
     zlib
   ];
 
-  patches = [
-    ./cli-path.patch
+  patches = lib.optionals withCli [
+    ./picli-path-resolution.patch
   ];
 
   # remove the dependency on MaaDeps, which is replaced by the above buildInputs
@@ -80,28 +82,25 @@ clangStdenv.mkDerivation (finalAttrs: {
 
   # $out/share/MaaAgentBinary do not need to be patched
   dontAutoPatchelf = true;
-
   postFixup = ''
     autoPatchelf $out/bin $out/lib
   '';
 
   cmakeFlags = [
-    "-DWITH_RPATH_LIBRARY=OFF" # Maa by default copies libraries to output
+    "-DWITH_RPATH_LIBRARY=OFF"
     "-DMAA_HASH_VERSION=${finalAttrs.version}"
     "-DWITH_WIN32_CONTROLLER=OFF"
     "-DWITH_PLAYCOVER_CONTROLLER=OFF"
     "-DWITH_ANDROID_NATIVE_CONTROLLER=OFF"
     "-DWITH_GAMEPAD_CONTROLLER=OFF" # supports only windows
-  ];
+  ]
+  ++ lib.optional (!withCli) "-DBUILD_PICLI=OFF";
 
   meta = {
     description = "An automation black-box testing framework based on image recognition";
     homepage = "https://maafw.com";
     changelog = "https://github.com/MaaXYZ/MaaFramework/releases/tag/v${finalAttrs.version}";
     license = lib.licenses.lgpl3Only;
-    platforms = [
-      "x86_64-linux"
-      "aarch64-linux"
-    ];
+    platforms = lib.platforms.linux;
   };
 })

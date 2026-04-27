@@ -23,16 +23,14 @@ let
     fetchSubmodules = true;
   };
 
-  vendorHash = "sha256-0R2PNroT0WpVOtQcT2N+6wP9zcInrV/31Dsv+o8sQB8=";
-
   go-service = callPackage ./go-service.nix {
     inherit
       pname
       version
       src
       meta
-      vendorHash
       ;
+    vendorHash = "sha256-0R2PNroT0WpVOtQcT2N+6wP9zcInrV/31Dsv+o8sQB8=";
   };
 
   cpp-algo = callPackage ./cpp-algo.nix {
@@ -74,16 +72,14 @@ stdenvNoCC.mkDerivation (finalAttrs: {
     mkdir -p $out/bin
 
     # This can't be symbol linked. It will find resource in its runtime path.
-    # `mxu` is a wrapper script, copying it is no use. We need to copy the wrapped binary and wrap it again.
-    cp ${mxu-unwrapped}/bin/mxu $out/lib/mxu
+    cp ${mxu-unwrapped}/bin/mxu $out/lib/.mxu-wrapped
 
     # This will be wrapped by wrapGAppsHook3
-    ln -s $out/lib/mxu $out/bin/MaaEnd
+    ln -s $out/lib/.mxu-wrapped $out/bin/MaaEnd
 
     cp ${go-service}/bin/go-service $out/lib/agent/go-service
     cp ${cpp-algo}/agent/cpp-algo $out/lib/agent/cpp-algo
 
-    cp ${maa-framework}/bin/MaaPiCli $out/lib/MaaPiCli
     ln -s ${maa-framework}/lib/* $out/lib/maafw
     ln -s ${maa-framework}/share/MaaAgentBinary $out/lib/maafw/MaaAgentBinary
 
