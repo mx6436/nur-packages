@@ -1,5 +1,6 @@
 let
-  # Recursively walk a directory and collect nix files into an attrset
+  overlay = import ../overlays/default.nix;
+
   mkModules =
     dir:
     let
@@ -11,13 +12,28 @@ let
           path = builtins.toString dir + "/" + name;
           typ = entriesWithType.${name};
           isDir = typ == "directory";
-          isNix = typ == "regular" && builtins.match ".+\\.nix$" name != null;
+          isNix = typ == "regular" && builtins.match ".+\\.nix$" name != null && name != "default.nix";
           attrName = builtins.substring 0 (builtins.stringLength name - 4) name;
           recurse = if isDir then mkModules path else { };
         in
-        acc // recurse // (if isNix then { ${attrName} = path; } else { });
+        acc
+        // recurse
+        // (
+          if isNix then
+            {
+              ${attrName} = {
+                imports = [
+                  {
+                    nixpkgs.overlays = [ overlay ];
+                  }
+                  path
+                ];
+              };
+            }
+          else
+            { }
+        );
     in
     builtins.foldl' addEntry { } entries;
 in
-# export all modules found under this directory (recursive)
 mkModules ./.

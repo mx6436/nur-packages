@@ -11,25 +11,8 @@
 }:
 
 let
-  # path to the packages directory relative to this file
-  pkgRoot = ./pkgs;
-
-  # list of subdirectories in pkgs that contain a package.nix
-  pkgNames = builtins.filter (name: builtins.pathExists (./pkgs/${name}/package.nix)) (
-    builtins.attrNames (builtins.readDir pkgRoot)
-  );
-
-  # Build all packages in a shared scope so package-level dependencies
-  # can be resolved from other packages in this repository.
-  packageScope = pkgs.lib.makeScope pkgs.newScope (
-    self:
-    builtins.listToAttrs (
-      map (name: {
-        name = name;
-        value = self.callPackage (./pkgs/${name}/package.nix) { };
-      }) pkgNames
-    )
-  );
+  overlay = import ./overlays/default.nix;
+  packageScope = overlay pkgs pkgs;
 in
 
 {

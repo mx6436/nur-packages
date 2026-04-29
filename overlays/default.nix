@@ -1,5 +1,19 @@
-{
-  # Add your overlays here
-  #
-  # my-overlay = import ./my-overlay;
-}
+final: prev:
+
+let
+  pkgRoot = ../pkgs;
+
+  pkgNames = builtins.filter (name: builtins.pathExists (../pkgs/${name}/package.nix)) (
+    builtins.attrNames (builtins.readDir pkgRoot)
+  );
+in
+
+prev.lib.makeScope prev.newScope (
+  self:
+  builtins.listToAttrs (
+    map (name: {
+      name = name;
+      value = self.callPackage (../pkgs/${name}/package.nix) { };
+    }) pkgNames
+  )
+)
