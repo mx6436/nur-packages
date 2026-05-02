@@ -13,13 +13,13 @@
 
 let
   pname = "maaend";
-  version = "2.7.0";
+  version = "2.8.0";
 
   src = fetchFromGitHub {
     owner = "MaaEnd";
     repo = "MaaEnd";
     rev = "v${version}";
-    hash = "sha256-Jy2ajIlbYzVnZL/A9OG9R3zNpZZsqV127mDk34B22LA=";
+    hash = "sha256-w54wxDcyw/SEFtNvs15SeHu1q8t7fM5b8utkkFZ59E4=";
     fetchSubmodules = true;
   };
 
