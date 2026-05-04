@@ -9,17 +9,22 @@
   maa-framework,
   mxu-unwrapped,
   wrapGAppsHook3,
+
+  isBeta ? false,
 }:
 
 let
   pname = "maaend";
-  version = "2.8.0";
+  version = if isBeta then "2.8.0-rc.1" else "2.8.0";
 
   src = fetchFromGitHub {
     owner = "MaaEnd";
     repo = "MaaEnd";
     rev = "v${version}";
-    hash = "sha256-w54wxDcyw/SEFtNvs15SeHu1q8t7fM5b8utkkFZ59E4=";
+    hash = if isBeta then
+      "sha256-41kLX+OM+8QQnQUdTptMnJB6gELgehUf/liMBhggi14="
+    else
+      "sha256-w54wxDcyw/SEFtNvs15SeHu1q8t7fM5b8utkkFZ59E4=";
     fetchSubmodules = true;
   };
 
@@ -30,7 +35,10 @@ let
       src
       meta
       ;
-    vendorHash = "sha256-0R2PNroT0WpVOtQcT2N+6wP9zcInrV/31Dsv+o8sQB8=";
+    vendorHash = if isBeta then
+      "sha256-0R2PNroT0WpVOtQcT2N+6wP9zcInrV/31Dsv+o8sQB8="
+    else
+      "sha256-0R2PNroT0WpVOtQcT2N+6wP9zcInrV/31Dsv+o8sQB8=";
   };
 
   cpp-algo = callPackage ./cpp-algo.nix {

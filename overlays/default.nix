@@ -16,4 +16,7 @@ prev.lib.makeScope prev.newScope (
       value = self.callPackage (../pkgs/${name}/package.nix) { };
     }) pkgNames
   )
+  // {
+    maaend-beta = self.callPackage ../pkgs/maaend/package.nix { isBeta = true; };
+  }
 )
