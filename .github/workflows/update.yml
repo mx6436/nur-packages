@@ -6,8 +6,8 @@ permissions:
 
 on:
   schedule:
-    # UTC 时间，每天 04:00 运行
-    - cron: '0 4 * * *'
+    # 每天 04:51 运行 (GMT+8)
+    - cron: '51 20 * * *'
   workflow_dispatch:
 
 jobs:
@@ -26,24 +26,52 @@ jobs:
         with:
           nix_path: nixpkgs=channel:nixos-unstable
 
-      - name: run update script
+      - name: update reliquary-archiver
         run: |
           chmod +x pkgs/reliquary-archiver/update.fish
           pkgs/reliquary-archiver/update.fish
 
-      - name: commit & push
+      - name: commit & push reliquary-archiver
         run: |
           git config user.name "github actions"
           git config user.email "actions@github.com"
-          
-          # 检查 manifest.json 是否被修改
+
           if ! git diff --quiet pkgs/reliquary-archiver/manifest.json; then
             OLD_REV=$(git show HEAD:pkgs/reliquary-archiver/manifest.json | jq -r '.gameDataRev' 2>/dev/null || echo "unknown")
             NEW_REV=$(jq -r '.gameDataRev' pkgs/reliquary-archiver/manifest.json)
-            
+
             git add pkgs/reliquary-archiver/manifest.json
             git commit -m "reliquary-archiver: update resource (${OLD_REV:0:7} -> ${NEW_REV:0:7})"
             git push
           else
             echo "No changes to commit"
+          fi
+
+      - name: update maaend
+        run: |
+          chmod +x pkgs/maaend/update.fish
+          pkgs/maaend/update.fish
+
+      - name: commit & push maaend
+        run: |
+          if ! git diff --quiet pkgs/maaend/version.json; then
+            OLD_BETA=$(git show HEAD:pkgs/maaend/version.json | jq -r '.beta.version')
+            OLD_STABLE=$(git show HEAD:pkgs/maaend/version.json | jq -r '.stable.version')
+            NEW_BETA=$(jq -r '.beta.version' pkgs/maaend/version.json)
+            NEW_STABLE=$(jq -r '.stable.version' pkgs/maaend/version.json)
+
+            if [ "$OLD_BETA" != "$NEW_BETA" ]; then
+              MSG="maaend-beta: $OLD_BETA -> $NEW_BETA"
+            elif [ "$OLD_STABLE" != "$NEW_STABLE" ]; then
+              MSG="maaend: $OLD_STABLE -> $NEW_STABLE"
+            else
+              echo "No variant version changed, skipping commit"
+              exit 0
+            fi
+
+            git add pkgs/maaend/version.json
+            git commit -m "$MSG"
+            git push
+          else
+            echo "No changes to maaend"
           fi
