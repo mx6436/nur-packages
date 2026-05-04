@@ -14,17 +14,17 @@
 }:
 
 let
+  versionInfo = lib.importJSON ./version.json;
+  variant = if isBeta then "beta" else "stable";
+  info = versionInfo.${variant};
   pname = "maaend";
-  version = if isBeta then "2.8.0-rc.1" else "2.8.0";
+  inherit (info) version;
 
   src = fetchFromGitHub {
     owner = "MaaEnd";
     repo = "MaaEnd";
     rev = "v${version}";
-    hash = if isBeta then
-      "sha256-41kLX+OM+8QQnQUdTptMnJB6gELgehUf/liMBhggi14="
-    else
-      "sha256-w54wxDcyw/SEFtNvs15SeHu1q8t7fM5b8utkkFZ59E4=";
+    hash = info.srcHash;
     fetchSubmodules = true;
   };
 
@@ -35,10 +35,7 @@ let
       src
       meta
       ;
-    vendorHash = if isBeta then
-      "sha256-0R2PNroT0WpVOtQcT2N+6wP9zcInrV/31Dsv+o8sQB8="
-    else
-      "sha256-0R2PNroT0WpVOtQcT2N+6wP9zcInrV/31Dsv+o8sQB8=";
+    inherit (info) vendorHash;
   };
 
   cpp-algo = callPackage ./cpp-algo.nix {
@@ -68,6 +65,8 @@ stdenvNoCC.mkDerivation (finalAttrs: {
     src
     meta
     ;
+
+  passthru.updateScript = ./update.fish;
 
   nativeBuildInputs = [
     wrapGAppsHook3
