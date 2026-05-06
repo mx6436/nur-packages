@@ -4,5 +4,6 @@ result-*
 # Runtime data directory created by MaaDebugger
 .maa/
 
-# superpowers skill
+# AI
+.sisyphus
 docs/superpowers
