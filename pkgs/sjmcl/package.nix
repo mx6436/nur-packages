@@ -1,14 +1,13 @@
 {
   lib,
   stdenv,
-  stdenvNoCC,
-  callPackage,
-  wrapGAppsHook3,
-  glib-networking,
-  desktop-file-utils,
+  makeWrapper,
+  sjmcl-unwrapped,
+  symlinkJoin,
 
   addDriverRunpath,
   alsa-lib,
+  desktop-file-utils,
   flite,
   gamemode,
   glfw3-minecraft,
@@ -56,8 +55,6 @@ assert lib.assertMsg (
 
 let
 
-  unwrapped = callPackage ./unwrapped.nix { };
-
   runtimeLibs = [
     (lib.getLib stdenv.cc.cc)
     ## native versions
@@ -88,53 +85,36 @@ let
   ++ additionalLibs;
 
   runtimePrograms = [
+    desktop-file-utils # Tauri Deep Linking
     mesa-demos
     pciutils # need lspci
     xrandr # needed for LWJGL [2.9.2, 3) https://github.com/LWJGL/lwjgl/issues/128
   ]
-  ++ lib.optional stdenv.hostPlatform.isLinux desktop-file-utils # Tauri Deep Linking
   ++ additionalPrograms;
 
 in
 
-stdenvNoCC.mkDerivation {
+symlinkJoin {
   pname = "sjmcl";
-  inherit (unwrapped) version;
+  inherit (sjmcl-unwrapped) version;
 
-  dontUnpack = true;
+  paths = [ sjmcl-unwrapped ];
 
-  nativeBuildInputs = lib.optionals stdenv.hostPlatform.isLinux [
-    wrapGAppsHook3
+  nativeBuildInputs = [
+    makeWrapper
   ];
 
-  buildInputs = lib.optionals stdenv.hostPlatform.isLinux [
-    glib-networking
-  ];
-
-  installPhase = ''
-    runHook preInstall
-
-    mkdir -p $out/{bin,lib,share}
-    ln -s ${unwrapped}/bin/* $out/bin/
-    ln -s ${unwrapped}/lib/* $out/lib/
-    ln -s ${unwrapped}/share/* $out/share/
-
-    runHook postInstall
-  '';
-
-  preFixup = lib.optionalString stdenv.hostPlatform.isLinux ''
-    gappsWrapperArgs+=(
-      # Ensure tauri deep-link runtime registration writes Exec to the wrapped launcher.
-      --set APPIMAGE "$out/bin/SJMCL"
-      --prefix LD_LIBRARY_PATH : ${addDriverRunpath.driverLink}/lib
-      --prefix LD_LIBRARY_PATH : ${lib.makeLibraryPath runtimeLibs}
-      --prefix PATH : ${lib.makeBinPath runtimePrograms}
+  postBuild = ''
+    wrapProgram $out/bin/SJMCL \
+      --set APPIMAGE "$out/bin/SJMCL" \
+      --prefix LD_LIBRARY_PATH : ${addDriverRunpath.driverLink}/lib \
+      --prefix LD_LIBRARY_PATH : ${lib.makeLibraryPath runtimeLibs} \
+      --prefix PATH : ${lib.makeBinPath runtimePrograms} \
       --prefix PATH : ${lib.makeBinPath jdks}
-    )
   '';
 
   meta = {
-    inherit (unwrapped.meta)
+    inherit (sjmcl-unwrapped.meta)
       description
       homepage
       changelog

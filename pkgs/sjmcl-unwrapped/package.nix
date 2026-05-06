@@ -1,35 +1,35 @@
 {
   lib,
   stdenv,
-  rustPlatform,
+  cargo-tauri,
   fetchFromGitHub,
   fetchNpmDeps,
-  cargo-tauri,
+  glib-networking,
   nodejs,
   npmHooks,
-  openssl,
   pkg-config,
+  rustPlatform,
   webkitgtk_4_1,
-  libsoup_3,
+  wrapGAppsHook3,
 }:
 
 rustPlatform.buildRustPackage (finalAttrs: {
   pname = "sjmcl-unwrapped";
-  version = "0.8.3";
+  version = "1.0.0";
 
   src = fetchFromGitHub {
     owner = "UNIkeEN";
     repo = "SJMCL";
     rev = "v${finalAttrs.version}";
-    hash = "sha256-w+/qr+jndkyfjKyCaVPQnarUROahD7xEWY06nlc4jZM=";
+    hash = "sha256-+Ok+AuPvn1OSL6lBGd3x4AIOvjc2YAExUM8RmCydfck=";
   };
 
-  cargoHash = "sha256-kui9FVuknNHtP30f08vvSjWJOaNIWvil/ruQqxtKqys=";
+  cargoHash = "sha256-cn2xpMshREAmHfV0Lv4cSXwctzSNLk9AR4a50xu0j7E=";
 
   npmDeps = fetchNpmDeps {
     name = "${finalAttrs.pname}-${finalAttrs.version}-npm-deps";
     inherit (finalAttrs) src;
-    hash = "sha256-bOlKbuhyFifjnSB7eeVXAT0aVC8Vxp7DiR7D8vJE8LU=";
+    hash = "sha256-tP8qJc/e2pVK7XbUWoAGIbhrKN8MnWEwKCodfBBC2bU=";
   };
 
   nativeBuildInputs = [
@@ -37,12 +37,12 @@ rustPlatform.buildRustPackage (finalAttrs: {
     nodejs
     npmHooks.npmConfigHook
     pkg-config
+    wrapGAppsHook3
   ];
 
   buildInputs = lib.optionals stdenv.hostPlatform.isLinux [
-    openssl
+    glib-networking
     webkitgtk_4_1
-    libsoup_3
   ];
 
   cargoRoot = "src-tauri";
@@ -50,7 +50,12 @@ rustPlatform.buildRustPackage (finalAttrs: {
 
   defaultTauriBundleType = "deb";
 
-  doCheck = false; # doctests will fail
+  cargoTestFlags = [
+    # skip doctests (doc examples are not compilable code)
+    "--lib"
+    "--bins"
+    "--tests"
+  ];
 
   meta = {
     description = "A Minecraft launcher from @SJMC-Dev";
