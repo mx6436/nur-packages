@@ -107,7 +107,7 @@ symlinkJoin {
   postBuild = ''
     wrapProgram $out/bin/SJMCL \
       ${lib.optionalString stdenv.hostPlatform.isLinux ''
-        --set APPIMAGE "$out/bin/SJMCL" \
+        --set-default APPIMAGE SJMCL \
         --prefix LD_LIBRARY_PATH : ${addDriverRunpath.driverLink}/lib \
         --prefix LD_LIBRARY_PATH : ${lib.makeLibraryPath runtimeLibs} \
         --prefix PATH : ${lib.makeBinPath runtimePrograms} \
