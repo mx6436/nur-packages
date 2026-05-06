@@ -37,8 +37,8 @@ rustPlatform.buildRustPackage (finalAttrs: {
     nodejs
     npmHooks.npmConfigHook
     pkg-config
-    wrapGAppsHook3
-  ];
+  ]
+  ++ lib.optionals stdenv.hostPlatform.isLinux [ wrapGAppsHook3 ];
 
   buildInputs = lib.optionals stdenv.hostPlatform.isLinux [
     glib-networking
@@ -64,6 +64,6 @@ rustPlatform.buildRustPackage (finalAttrs: {
     license = lib.licenses.gpl3Only;
     maintainers = [ ];
     mainProgram = "SJMCL";
-    platforms = lib.platforms.linux ++ lib.platforms.darwin; # darwin not tested
+    platforms = lib.platforms.linux ++ lib.platforms.darwin;
   };
 })
