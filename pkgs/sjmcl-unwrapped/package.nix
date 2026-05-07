@@ -4,18 +4,19 @@
   cargo-tauri,
   fetchFromGitHub,
   fetchNpmDeps,
-  glib-networking,
+  nix-update-script,
   nodejs,
   npmHooks,
   pkg-config,
   rustPlatform,
   webkitgtk_4_1,
-  wrapGAppsHook3,
 }:
 
 rustPlatform.buildRustPackage (finalAttrs: {
   pname = "sjmcl-unwrapped";
   version = "1.0.0";
+
+  __structuredAttrs = true;
 
   src = fetchFromGitHub {
     owner = "UNIkeEN";
@@ -37,18 +38,14 @@ rustPlatform.buildRustPackage (finalAttrs: {
     nodejs
     npmHooks.npmConfigHook
     pkg-config
-  ]
-  ++ lib.optionals stdenv.hostPlatform.isLinux [ wrapGAppsHook3 ];
+  ];
 
   buildInputs = lib.optionals stdenv.hostPlatform.isLinux [
-    glib-networking
     webkitgtk_4_1
   ];
 
   cargoRoot = "src-tauri";
   buildAndTestSubdir = finalAttrs.cargoRoot;
-
-  defaultTauriBundleType = "deb";
 
   cargoTestFlags = [
     # skip doctests (doc examples are not compilable code)
@@ -57,8 +54,10 @@ rustPlatform.buildRustPackage (finalAttrs: {
     "--tests"
   ];
 
+  passthru.updateScript = nix-update-script { };
+
   meta = {
-    description = "A Minecraft launcher from @SJMC-Dev";
+    description = "A Minecraft launcher from SJTU Minecraft Club";
     homepage = "https://mc.sjtu.cn/sjmcl";
     changelog = "https://github.com/UNIkeEN/SJMCL/releases/tag/v${finalAttrs.version}";
     license = lib.licenses.gpl3Only;
