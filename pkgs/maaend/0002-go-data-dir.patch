@@ -9,7 +9,7 @@ index e32047dd..14465aca 100644
 +func getMxuDataDir() string {
 +	xdgDataHome := os.Getenv("XDG_DATA_HOME")
 +	if xdgDataHome != "" {
-+		return filepath.Join(xdgDataHome, "mxu")
++		return filepath.Join(xdgDataHome, "MXU")
 +	}
 +
 +	homeDir, err := os.UserHomeDir()
@@ -17,7 +17,7 @@ index e32047dd..14465aca 100644
 +		return "."
 +	}
 +
-+	return filepath.Join(homeDir, ".local", "share", "mxu")
++	return filepath.Join(homeDir, ".local", "share", "MXU")
 +}
 +
 +func getDebugDir() string {

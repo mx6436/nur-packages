@@ -17,11 +17,11 @@ index 3771961a..a16ef6c1 100644
 +std::filesystem::path getToolkitUserPath()
 +{
 +    if (const char* xdg_data_home = std::getenv("XDG_DATA_HOME"); xdg_data_home && *xdg_data_home) {
-+        return std::filesystem::path(xdg_data_home) / "mxu" / "debug" / "cpp-algo";
++        return std::filesystem::path(xdg_data_home) / "MXU" / "debug" / "cpp-algo";
 +    }
 +
 +    if (const char* home = std::getenv("HOME"); home && *home) {
-+        return std::filesystem::path(home) / ".local" / "share" / "mxu" / "debug" / "cpp-algo";
++        return std::filesystem::path(home) / ".local" / "share" / "MXU" / "debug" / "cpp-algo";
 +    }
 +
 +    return std::filesystem::path(".") / "debug" / "cpp-algo";
