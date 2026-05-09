@@ -16,7 +16,7 @@ or begin
     echo "ERROR: Failed to parse tag_name"
     exit 1
 end
-set is_prerelease (echo $response | jq -er '.[0].prerelease')
+set is_prerelease (echo $response | jq -r '.[0].prerelease')
 or begin
     echo "ERROR: Failed to parse prerelease flag"
     exit 1
