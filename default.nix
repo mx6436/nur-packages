@@ -10,11 +10,6 @@
   pkgs ? import <nixpkgs> { },
 }:
 
-let
-  overlay = import ./overlays/default.nix;
-  packageScope = overlay pkgs pkgs;
-in
-
 {
   # The `lib`, `modules`, and `overlays` names are special
   lib = import ./lib { inherit pkgs; }; # functions
@@ -23,4 +18,20 @@ in
 }
 
 # merge in dynamically-discovered packages
-// packageScope
+// pkgs.lib.makeScope pkgs.newScope (
+  self:
+  let
+    pkgNames = builtins.filter (name: builtins.pathExists ./pkgs/${name}/package.nix) (
+      builtins.attrNames (builtins.readDir ./pkgs)
+    );
+  in
+  builtins.listToAttrs (
+    map (name: {
+      name = name;
+      value = self.callPackage ./pkgs/${name}/package.nix { };
+    }) pkgNames
+  )
+  // {
+    maaend-beta = self.callPackage ./pkgs/maaend/package.nix { isBeta = true; };
+  }
+)
