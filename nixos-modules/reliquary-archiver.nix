@@ -7,6 +7,7 @@
 
 let
   cfg = config.programs.reliquary-archiver;
+  reliquary-archiver = pkgs.callPackage ../pkgs/reliquary-archiver/package.nix { };
 in
 
 {
@@ -15,8 +16,8 @@ in
 
     package = lib.mkOption {
       type = lib.types.package;
-      default = pkgs.reliquary-archiver;
-      defaultText = lib.literalExpression "pkgs.reliquary-archiver";
+      default = reliquary-archiver;
+      defaultText = lib.literalExpression "reliquary-archiver";
       description = "The reliquary-archiver package to use.";
     };
   };
