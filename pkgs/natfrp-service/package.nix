@@ -9,6 +9,8 @@ stdenvNoCC.mkDerivation (finalAttrs: {
   pname = "natfrp-service";
   version = "3.1.7";
 
+  __structuredAttrs = true;
+
   src = fetchzip {
     url = "https://nya.globalslb.net/natfrp/client/launcher-unix/${finalAttrs.version}/natfrp-service_linux_amd64.tar.zst";
     hash = "sha256-qAEyYdi81nj+TrxTNC8dPUpmnJaACBldeKZjU7QvYFg=";

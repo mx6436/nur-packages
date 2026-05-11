@@ -19,6 +19,8 @@ rustPlatform.buildRustPackage (finalAttrs: {
   pname = "mxu-unwrapped";
   version = "2.1.3";
 
+  __structuredAttrs = true;
+
   src = fetchFromGitHub {
     owner = "MistEO";
     repo = "MXU";

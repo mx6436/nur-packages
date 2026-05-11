@@ -28,6 +28,8 @@ let
     pname = "${pname}-frontend";
     inherit version src;
 
+    __structuredAttrs = true;
+
     pnpmDeps = fetchPnpmDeps {
       inherit pname version src;
       fetcherVersion = 3;
@@ -62,6 +64,8 @@ buildGoModule (finalAttrs: {
     src
     vendorHash
     ;
+
+  __structuredAttrs = true;
 
   modRoot = "server";
   subPackages = [ "cmd/server" ];

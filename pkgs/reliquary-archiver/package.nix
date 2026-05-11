@@ -28,6 +28,8 @@ rustPlatform.buildRustPackage (finalAttrs: {
   pname = "reliquary-archiver";
   version = "0.15.0";
 
+  __structuredAttrs = true;
+
   src = fetchFromGitHub {
     owner = "IceDynamix";
     repo = "reliquary-archiver";
