@@ -4,36 +4,30 @@
   src,
   meta,
 
-  clangStdenv,
-
-  autoPatchelfHook,
-  cmake,
-  lld,
-
   boost187,
+  cmake,
   maa-framework,
   onnxruntime,
   opencv,
+  stdenv,
 }:
 
-clangStdenv.mkDerivation (finalAttrs: {
+stdenv.mkDerivation (finalAttrs: {
+  pname = "${pname}-cpp-algo";
   inherit
     version
     src
     meta
     ;
 
-  pname = "${pname}-cpp-algo";
+  __structuredAttrs = true;
+  strictDeps = true;
 
   sourceRoot = "${src.name}/agent/cpp-algo";
 
   nativeBuildInputs = [
-    autoPatchelfHook
     cmake
-    lld
   ];
-
-  env.NIX_CFLAGS_LINK = "-fuse-ld=lld";
 
   buildInputs = [
     boost187

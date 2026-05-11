@@ -9,6 +9,7 @@
 }:
 
 buildGoModule (finalAttrs: {
+  pname = "${pname}-go-service";
   inherit
     version
     src
@@ -16,7 +17,7 @@ buildGoModule (finalAttrs: {
     vendorHash
     ;
 
-  pname = "${pname}-go-service";
+  __structuredAttrs = true;
 
   modRoot = "agent/go-service";
   subPackages = [ "." ];

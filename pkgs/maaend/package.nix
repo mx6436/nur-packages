@@ -1,13 +1,14 @@
 {
-  lib,
-  callPackage,
-  fetchFromGitHub,
-  stdenvNoCC,
-
   android-tools,
+  callPackage,
+  copyDesktopItems,
+  fetchFromGitHub,
+  lib,
   libayatana-appindicator,
   maa-framework,
+  makeDesktopItem,
   mxu-unwrapped,
+  stdenvNoCC,
   wrapGAppsHook3,
 
   isBeta ? false,
@@ -17,6 +18,7 @@ let
   versionInfo = lib.importJSON ./version.json;
   variant = if isBeta then "beta" else "stable";
   info = versionInfo.${variant};
+
   pname = "maaend";
   inherit (info) version;
 
@@ -44,7 +46,6 @@ let
       version
       src
       meta
-      maa-framework
       ;
   };
 
@@ -66,53 +67,41 @@ stdenvNoCC.mkDerivation (finalAttrs: {
     meta
     ;
 
+  __structuredAttrs = true;
+  strictDeps = true;
+
   passthru.updateScript = ./update.fish;
 
   nativeBuildInputs = [
+    copyDesktopItems
     wrapGAppsHook3
   ];
+
+  postPatch = ''
+    # write version to interface.json
+    substituteInPlace assets/interface.json \
+      --replace-fail "0.1.0" "${finalAttrs.version}"
+  '';
 
   installPhase = ''
     runHook preInstall
 
-    mkdir -p $out/lib/{agent,maafw}
-    mkdir -p $out/bin
+    mkdir -p $out/bin $out/lib/{maafw,agent} $out/share/icons/hicolor/512x512/apps
 
-    # This can't be symbol linked. It will find resource in its runtime path.
-    cp ${mxu-unwrapped}/bin/mxu $out/lib/.mxu-wrapped
+    # MXU hardcodes MAA library path to $exe_dir/maafw
+    cp -r ${maa-framework}/lib/. $out/lib/maafw
+    cp -r ${maa-framework}/share/MaaAgentBinary $out/lib/maafw/MaaAgentBinary
 
-    # This will be wrapped by wrapGAppsHook3
-    ln -s $out/lib/.mxu-wrapped $out/bin/MaaEnd
+    cp ${mxu-unwrapped}/bin/mxu $out/lib/mxu
+    # This symlink will be wrapped by wrapGAppsHook3
+    ln -s $out/lib/mxu $out/bin/MaaEnd
 
     cp ${go-service}/bin/go-service $out/lib/agent/go-service
     cp ${cpp-algo}/agent/cpp-algo $out/lib/agent/cpp-algo
-
-    ln -s ${maa-framework}/lib/* $out/lib/maafw
-    ln -s ${maa-framework}/share/MaaAgentBinary $out/lib/maafw/MaaAgentBinary
-
-    cp -r $src/assets/* $out/lib/
-    cp $src/README.md $out/lib/
-    cp $src/LICENSE $out/lib/
-
-    # write version to interface.json
-    substituteInPlace $out/lib/interface.json --replace-fail \
-      "0.1.0" "${finalAttrs.version}"
-
-    # Desktop entry
-    mkdir -p $out/share/applications
-    cat > $out/share/applications/maaend.desktop <<EOF
-    [Desktop Entry]
-    Name=MaaEnd
-    Comment=MAA Helper for Arknights: Endfield
-    Exec=$out/bin/MaaEnd %U
-    Icon=MaaEnd-Tiny
-    Terminal=false
-    Type=Application
-    Categories=Utility;
-    EOF
-
-    mkdir -p $out/share/icons/hicolor/512x512/apps
-    ln -s $out/lib/locales/MaaEnd-Tiny.png $out/share/icons/hicolor/512x512/apps/MaaEnd-Tiny.png
+    cp -r $src/assets/. $out/lib
+    cp $src/README.md $out/lib/README.md
+    cp $src/LICENSE $out/lib/LICENSE
+    cp $out/lib/locales/MaaEnd-Tiny.png $out/share/icons/hicolor/512x512/apps/MaaEnd-Tiny.png
 
     runHook postInstall
   '';
@@ -123,4 +112,16 @@ stdenvNoCC.mkDerivation (finalAttrs: {
       --prefix PATH : ${lib.makeBinPath [ android-tools ]}
     )
   '';
+
+  desktopItems = [
+    (makeDesktopItem {
+      name = "maaend";
+      type = "Application";
+      desktopName = "MaaEnd";
+      comment = "MAA Helper for Arknights: Endfield";
+      icon = "MaaEnd-Tiny";
+      exec = "MaaEnd";
+      categories = [ "Utility" ];
+    })
+  ];
 })
