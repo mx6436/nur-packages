@@ -1,26 +1,25 @@
-################################################################################
-# Mostly based on fastdeploy_ppocr.nix from maa-assistant-arknights on nixpkgs
-################################################################################
-
 {
-  stdenv,
-  config,
-  lib,
-  fetchFromGitHub,
   cmake,
+  config,
   eigen,
+  fetchFromGitHub,
+  lib,
   onnxruntime,
   opencv,
+  stdenv,
   cudaSupport ? config.cudaSupport,
   cudaPackages ? { },
-}@inputs:
+}:
 
 let
-  effectiveStdenv = if cudaSupport then cudaPackages.backendStdenv else inputs.stdenv;
+  effectiveStdenv = if cudaSupport then cudaPackages.backendStdenv else stdenv;
 in
 effectiveStdenv.mkDerivation (finalAttrs: {
   pname = "fastdeploy-ppocr";
-  version = "e962983";
+  version = "0-unstable-2025-08-12";
+
+  __structuredAttrs = true;
+  strictDeps = true;
 
   src = fetchFromGitHub {
     owner = "MaaXYZ";
@@ -32,11 +31,11 @@ effectiveStdenv.mkDerivation (finalAttrs: {
 
   nativeBuildInputs = [
     cmake
-    eigen
   ]
   ++ lib.optionals cudaSupport [ cudaPackages.cuda_nvcc ];
 
   buildInputs = [
+    eigen
     onnxruntime
     opencv
   ]

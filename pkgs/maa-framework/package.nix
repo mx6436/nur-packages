@@ -1,28 +1,31 @@
 {
-  lib,
-  callPackage,
-  clangStdenv,
-  fetchFromGitHub,
-
-  autoPatchelfHook,
-  cmake,
-  lld,
-
   boost187,
+  callPackage,
+  cmake,
   cppzmq,
-  fastdeploy-ppocr ? callPackage ./fastdeploy-ppocr.nix { },
+  fetchFromGitHub,
+  lib,
   libffi,
-  opencv,
+  libsodium,
   onnxruntime,
+  opencv,
+  stdenv,
   wayland,
   zlib,
 
   withCli ? false,
 }:
 
-clangStdenv.mkDerivation (finalAttrs: {
+let
+  fastdeploy-ppocr = callPackage ./fastdeploy-ppocr.nix { };
+in
+
+stdenv.mkDerivation (finalAttrs: {
   pname = "maa-framework";
   version = "5.10.4";
+
+  __structuredAttrs = true;
+  strictDeps = true;
 
   src = fetchFromGitHub {
     owner = "MaaXYZ";
@@ -33,20 +36,17 @@ clangStdenv.mkDerivation (finalAttrs: {
   };
 
   nativeBuildInputs = [
-    autoPatchelfHook
     cmake
-    lld
   ];
-
-  env.NIX_CFLAGS_LINK = "-fuse-ld=lld";
 
   buildInputs = [
     boost187 # 1.87.0 is the last version compatible
     cppzmq
     fastdeploy-ppocr
     libffi
-    opencv
+    libsodium
     onnxruntime
+    opencv
     wayland.dev
     zlib
   ];
@@ -55,44 +55,43 @@ clangStdenv.mkDerivation (finalAttrs: {
     ./picli-path-resolution.patch
   ];
 
-  # remove the dependency on MaaDeps, which is replaced by the above buildInputs
   postPatch = ''
-    substituteInPlace source/MaaUtils/MaaUtils.cmake --replace-fail \
-      'include(''${MAADEPS_DIR}/maadeps.cmake)' ""
+    # remove the dependency on MaaDeps, which is replaced by the above buildInputs
+    substituteInPlace CMakeLists.txt \
+      --replace-fail 'maadeps_install(bin)' ""
 
-    substituteInPlace source/MaaUtils/cmake/utils.cmake --replace-fail \
-      'detect_maadeps_triplet(MAADEPS_TRIPLET)' ""
-
-    substituteInPlace CMakeLists.txt --replace-fail \
-      'maadeps_install(bin)' ""
-
-    substituteInPlace source/MaaUtils/MaaUtils.cmake --replace-fail \
+    substituteInPlace source/MaaUtils/MaaUtils.cmake \
+      --replace-fail 'include(''${MAADEPS_DIR}/maadeps.cmake)' "" \
+      --replace-fail \
       "OpenCV REQUIRED COMPONENTS core imgproc imgcodecs" \
       "OpenCV REQUIRED COMPONENTS core imgproc imgcodecs features2d calib3d flann"
 
+    substituteInPlace source/MaaUtils/cmake/utils.cmake \
+      --replace-fail "detect_maadeps_triplet(MAADEPS_TRIPLET)" ""
+
+    # Place .so files in $out/lib, not $out/bin
     while IFS= read -r f; do
       substituteInPlace "$f" --replace-fail "LIBRARY DESTINATION bin" "LIBRARY DESTINATION lib"
     done < <(grep -R -l --include='CMakeLists.txt' "LIBRARY DESTINATION bin" .)
+
+    # disable thin LTO
+    substituteInPlace source/MaaUtils/cmake/config.cmake \
+      --replace-fail '-flto=thin' ""
+
+    # fix -Werror=format
+    substituteInPlace source/MaaToolkit/DesktopWindow/DesktopWindowLinuxFinder.cpp \
+      --replace-fail "wayland-%d" "wayland-%u"
   '';
 
+  # make empty dir to suppress warnings
   # TODO: add a wrapper for plugins
   postInstall = ''
     mkdir -p $out/lib/plugins
   '';
 
-  # $out/share/MaaAgentBinary do not need to be patched
-  dontAutoPatchelf = true;
-  postFixup = ''
-    autoPatchelf $out/bin $out/lib
-  '';
-
   cmakeFlags = [
     "-DWITH_RPATH_LIBRARY=OFF"
     "-DMAA_HASH_VERSION=${finalAttrs.version}"
-    "-DWITH_WIN32_CONTROLLER=OFF"
-    "-DWITH_PLAYCOVER_CONTROLLER=OFF"
-    "-DWITH_ANDROID_NATIVE_CONTROLLER=OFF"
-    "-DWITH_GAMEPAD_CONTROLLER=OFF" # supports only windows
   ]
   ++ lib.optional (!withCli) "-DBUILD_PICLI=OFF";
 
