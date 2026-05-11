@@ -21,11 +21,9 @@
       packages = forAllSystems (
         system: nixpkgs.lib.filterAttrs (_: v: nixpkgs.lib.isDerivation v) self.legacyPackages.${system}
       );
-
-      # make all NixOS modules in ./modules available to other flakes
-      # so they can be referenced as
-      #   inputs.nur-packages.nixosModules.<name>
-      # (modules don't depend on system, so we export the flat set directly)
-      nixosModules = import ./modules;
+      nixosModules = import ./nixos-modules;
+      # homeModules = import ./home-modules;
+      # darwinModules = import ./darwin-modules;
+      # flakeModules = import ./flake-modules;
     };
 }
