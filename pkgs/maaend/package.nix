@@ -98,9 +98,9 @@ stdenvNoCC.mkDerivation (finalAttrs: {
 
     cp ${go-service}/bin/go-service $out/lib/agent/go-service
     cp ${cpp-algo}/agent/cpp-algo $out/lib/agent/cpp-algo
-    cp -r $src/assets/. $out/lib
-    cp $src/README.md $out/lib/README.md
-    cp $src/LICENSE $out/lib/LICENSE
+    cp -r assets/. $out/lib
+    cp README.md $out/lib/README.md
+    cp LICENSE $out/lib/LICENSE
     cp $out/lib/locales/MaaEnd-Tiny.png $out/share/icons/hicolor/512x512/apps/MaaEnd-Tiny.png
 
     runHook postInstall
