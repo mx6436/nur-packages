@@ -14,7 +14,7 @@
 
 rustPlatform.buildRustPackage (finalAttrs: {
   pname = "sjmcl-unwrapped";
-  version = "1.0.0";
+  version = "1.1.0";
 
   __structuredAttrs = true;
 
@@ -22,15 +22,15 @@ rustPlatform.buildRustPackage (finalAttrs: {
     owner = "UNIkeEN";
     repo = "SJMCL";
     rev = "v${finalAttrs.version}";
-    hash = "sha256-+Ok+AuPvn1OSL6lBGd3x4AIOvjc2YAExUM8RmCydfck=";
+    hash = "sha256-cwZRQjSo5lzSjX2lpLhcSuvdiTLhMTcXQhnk340+0yY=";
   };
 
-  cargoHash = "sha256-cn2xpMshREAmHfV0Lv4cSXwctzSNLk9AR4a50xu0j7E=";
+  cargoHash = "sha256-jUebQ3uIoe7mT8fRqEsofq1sxT8EBRB3CUJ2Ac6XEt8=";
 
   npmDeps = fetchNpmDeps {
     name = "${finalAttrs.pname}-${finalAttrs.version}-npm-deps";
     inherit (finalAttrs) src;
-    hash = "sha256-tP8qJc/e2pVK7XbUWoAGIbhrKN8MnWEwKCodfBBC2bU=";
+    hash = "sha256-r4W4gjx0Y8o7iR1ififDATgZmpXhNRksgkCLd8iOJXI=";
   };
 
   nativeBuildInputs = [
