@@ -11,6 +11,7 @@
   onnxruntime,
   opencv,
   stdenv,
+  zlib,
 }:
 
 stdenv.mkDerivation (finalAttrs: {
@@ -35,6 +36,7 @@ stdenv.mkDerivation (finalAttrs: {
     maa-framework
     onnxruntime
     opencv
+    zlib
   ];
 
   patches = [
@@ -45,8 +47,7 @@ stdenv.mkDerivation (finalAttrs: {
     # Build against Nix-provided dependencies instead of MaaDeps.
     substituteInPlace MaaUtils/MaaUtils.cmake \
       --replace-fail 'include(''${MAADEPS_DIR}/maadeps.cmake)' "" \
-      --replace-fail "find_package(fastdeploy_ppocr REQUIRED)" "" \
-      --replace-fail "find_package(ZLIB REQUIRED)" ""
+      --replace-fail "find_package(fastdeploy_ppocr REQUIRED)" ""
     substituteInPlace MaaUtils/cmake/utils.cmake \
       --replace-fail 'detect_maadeps_triplet(MAADEPS_TRIPLET)' ""
 
