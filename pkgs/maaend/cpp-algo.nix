@@ -6,6 +6,7 @@
 
   boost187,
   cmake,
+  lib,
   maa-framework,
   onnxruntime,
   opencv,
@@ -60,8 +61,7 @@ stdenv.mkDerivation (finalAttrs: {
   '';
 
   cmakeFlags = [
-    "-DBUILD_MAA_UTILS=OFF"
-    "-DCMAKE_BUILD_TYPE=Release"
-    "-DWITH_RPATH_LIBRARY=OFF"
+    (lib.cmakeBool "BUILD_MAA_UTILS" false)
+    (lib.cmakeBool "WITH_RPATH_LIBRARY" false)
   ];
 })

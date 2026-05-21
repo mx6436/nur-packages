@@ -90,10 +90,12 @@ stdenv.mkDerivation (finalAttrs: {
   '';
 
   cmakeFlags = [
-    "-DWITH_RPATH_LIBRARY=OFF"
-    "-DMAA_HASH_VERSION=${finalAttrs.version}"
+    (lib.cmakeBool "WITH_RPATH_LIBRARY" false)
+    (lib.cmakeFeature "MAA_HASH_VERSION" finalAttrs.version)
   ]
-  ++ lib.optional (!withCli) "-DBUILD_PICLI=OFF";
+  ++ lib.optionals (!withCli) [
+    (lib.cmakeBool "BUILD_PICLI" false)
+  ];
 
   meta = {
     description = "An automation black-box testing framework based on image recognition";
