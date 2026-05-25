@@ -51,7 +51,10 @@ stdenv.mkDerivation (finalAttrs: {
     zlib
   ];
 
-  patches = lib.optionals withCli [
+  patches = [
+    ./handle-EINTR.patch
+  ]
+  ++ lib.optionals withCli [
     ./picli-path-resolution.patch
   ];
 
