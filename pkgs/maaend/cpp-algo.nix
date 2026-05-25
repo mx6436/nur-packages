@@ -25,7 +25,7 @@ stdenv.mkDerivation (finalAttrs: {
   __structuredAttrs = true;
   strictDeps = true;
 
-  sourceRoot = "${src.name}/agent/cpp-algo";
+  cmakeDir = "../agent/cpp-algo";
 
   nativeBuildInputs = [
     cmake
@@ -45,19 +45,19 @@ stdenv.mkDerivation (finalAttrs: {
 
   postPatch = ''
     # Build against Nix-provided dependencies instead of MaaDeps.
-    substituteInPlace MaaUtils/MaaUtils.cmake \
+    substituteInPlace agent/cpp-algo/MaaUtils/MaaUtils.cmake \
       --replace-fail 'include(''${MAADEPS_DIR}/maadeps.cmake)' "" \
       --replace-fail "find_package(fastdeploy_ppocr REQUIRED)" ""
-    substituteInPlace MaaUtils/cmake/utils.cmake \
+    substituteInPlace agent/cpp-algo/MaaUtils/cmake/utils.cmake \
       --replace-fail 'detect_maadeps_triplet(MAADEPS_TRIPLET)' ""
 
     # Resolve framework paths from the packaged maa-framework output.
-    substituteInPlace CMakeLists.txt \
+    substituteInPlace agent/cpp-algo/CMakeLists.txt \
       --replace-fail 'DEPS_DIR ''${CMAKE_CURRENT_SOURCE_DIR}/../../deps' 'DEPS_DIR ${maa-framework}' \
       --replace-fail "RelWithDebInfo" "Release"
 
     # MaaUtils is provided by maa-framework, not this build tree.
-    substituteInPlace source/CMakeLists.txt \
+    substituteInPlace agent/cpp-algo/source/CMakeLists.txt \
       --replace-fail "add_dependencies(cpp-algo MaaUtils)" ""
   '';
 
