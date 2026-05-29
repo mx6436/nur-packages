@@ -5,8 +5,8 @@
     "vendorHash": "sha256-pgL/rP28YN0q49yPyBN3DTvwn/xdcKF1BE74gBuyyrU="
   },
   "stable": {
-    "version": "2.11.0",
-    "srcHash": "sha256-LC7V34a8nOku/PUoo0tt5sLusbiPc/9CQwGkWt5seb0=",
+    "version": "2.12.0",
+    "srcHash": "sha256-aFVCLpM6Qr7byrYg6JJHTmfp5zDBcBisiD4a1Jty0+c=",
     "vendorHash": "sha256-pgL/rP28YN0q49yPyBN3DTvwn/xdcKF1BE74gBuyyrU="
   }
 }
