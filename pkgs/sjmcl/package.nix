@@ -60,9 +60,11 @@ let
     libxrandr
     libxxf86vm
 
+    addDriverRunpath.driverLink
     flite # narrator support
     gamemode.lib # gamemode support
     glib-networking # Tauri
+    (lib.getLib stdenv.cc.cc) # lwjgl
     libusb1 # controller support
     udev # oshi
     vulkan-loader # VulkanMod's lwjgl
@@ -85,9 +87,7 @@ symlinkJoin {
   paths = [ sjmcl-unwrapped ];
 
   strictDeps = true;
-  # breaks symlinkJoin
-  # https://github.com/NixOS/nixpkgs/pull/510526
-  # __structuredAttrs = true;
+  __structuredAttrs = true;
 
   nativeBuildInputs = [
     wrapGAppsHook3
@@ -102,7 +102,7 @@ symlinkJoin {
       --prefix PATH : ${lib.makeBinPath jdks}
       ${lib.optionalString stdenv.hostPlatform.isLinux ''
         --set-default APPIMAGE SJMCL
-        --set LD_LIBRARY_PATH ${addDriverRunpath.driverLink}/lib:${lib.makeLibraryPath runtimeLibs}
+        --set LD_LIBRARY_PATH ${lib.makeLibraryPath runtimeLibs}
         --prefix PATH : ${lib.makeBinPath runtimePrograms}
       ''}
     )

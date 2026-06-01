@@ -4,7 +4,6 @@
   cargo-tauri,
   fetchFromGitHub,
   fetchNpmDeps,
-  nix-update-script,
   nodejs,
   npmHooks,
   pkg-config,
@@ -21,17 +20,26 @@ rustPlatform.buildRustPackage (finalAttrs: {
   src = fetchFromGitHub {
     owner = "UNIkeEN";
     repo = "SJMCL";
-    rev = "v${finalAttrs.version}";
+    tag = "v${finalAttrs.version}";
     hash = "sha256-cwZRQjSo5lzSjX2lpLhcSuvdiTLhMTcXQhnk340+0yY=";
   };
-
-  cargoHash = "sha256-jUebQ3uIoe7mT8fRqEsofq1sxT8EBRB3CUJ2Ac6XEt8=";
 
   npmDeps = fetchNpmDeps {
     name = "${finalAttrs.pname}-${finalAttrs.version}-npm-deps";
     inherit (finalAttrs) src;
     hash = "sha256-r4W4gjx0Y8o7iR1ififDATgZmpXhNRksgkCLd8iOJXI=";
   };
+
+  cargoHash = "sha256-jUebQ3uIoe7mT8fRqEsofq1sxT8EBRB3CUJ2Ac6XEt8=";
+  cargoRoot = "src-tauri";
+
+  buildAndTestSubdir = finalAttrs.cargoRoot;
+  cargoTestFlags = [
+    # skip doctests (doc examples are not compilable code)
+    "--lib"
+    "--bins"
+    "--tests"
+  ];
 
   nativeBuildInputs = [
     cargo-tauri.hook
@@ -44,22 +52,10 @@ rustPlatform.buildRustPackage (finalAttrs: {
     webkitgtk_4_1
   ];
 
-  cargoRoot = "src-tauri";
-  buildAndTestSubdir = finalAttrs.cargoRoot;
-
-  cargoTestFlags = [
-    # skip doctests (doc examples are not compilable code)
-    "--lib"
-    "--bins"
-    "--tests"
-  ];
-
-  passthru.updateScript = nix-update-script { };
-
   meta = {
-    description = "A Minecraft launcher from SJTU Minecraft Club";
+    description = "Open source Minecraft launcher designed by SJTU Minecraft Club";
     homepage = "https://mc.sjtu.cn/sjmcl";
-    changelog = "https://github.com/UNIkeEN/SJMCL/releases/tag/v${finalAttrs.version}";
+    changelog = "https://github.com/UNIkeEN/SJMCL/releases/tag/${finalAttrs.src.tag}";
     license = lib.licenses.gpl3Only;
     maintainers = [ ];
     mainProgram = "SJMCL";
