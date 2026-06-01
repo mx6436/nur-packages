@@ -29,6 +29,16 @@ effectiveStdenv.mkDerivation (finalAttrs: {
     hash = "sha256-T20WhXE1toEgeXbMlQn9EnLXoz5vepUca4p7C2tQK44=";
   };
 
+  postPatch = ''
+    # config.h hardcodes WITH_COREML (macOS only) and WITH_DIRECTML (Windows only).
+    # onnxruntime nixpkgs ships coreml_provider_factory.h even on Linux, which causes
+    # ort_backend.cc to compile CoreML code that references a symbol not exported by onnxruntime.
+    sed -i \
+      -e '/#define WITH_DIRECTML/d' \
+      -e '/#define WITH_COREML/d' \
+      fastdeploy/core/config.h
+  '';
+
   nativeBuildInputs = [
     cmake
   ]
