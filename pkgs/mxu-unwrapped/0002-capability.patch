@@ -1,8 +1,18 @@
 diff --git a/src-tauri/capabilities/default.json b/src-tauri/capabilities/default.json
-index 5e25431..c9ed652 100644
+index 5e25431..26ebd3c 100644
 --- a/src-tauri/capabilities/default.json
 +++ b/src-tauri/capabilities/default.json
-@@ -40,22 +40,42 @@
+@@ -36,39 +36,84 @@
+     },
+     {
+       "identifier": "fs:allow-read-file",
+-      "allow": [{ "path": "**/*" }]
++      "allow": [
++        { "path": "**/*" },
++        { "path": "$XDG_DATA_HOME/MXU/**" },
++        { "path": "$HOME/.local/share/MXU/**" },
++        { "path": "$MXU_DATA_DIR/**" }
++      ]
      },
      {
        "identifier": "fs:allow-exists",
@@ -36,7 +46,13 @@ index 5e25431..c9ed652 100644
      },
      {
        "identifier": "fs:allow-write-file",
-       "allow": [{ "path": "**/*" }]
+-      "allow": [{ "path": "**/*" }]
++      "allow": [
++        { "path": "**/*" },
++        { "path": "$XDG_DATA_HOME/MXU/**" },
++        { "path": "$HOME/.local/share/MXU/**" },
++        { "path": "$MXU_DATA_DIR/**" }
++      ]
      },
      {
        "identifier": "fs:allow-mkdir",
@@ -50,3 +66,33 @@ index 5e25431..c9ed652 100644
      },
      {
        "identifier": "fs:allow-remove",
+-      "allow": [{ "path": "**/*" }]
++      "allow": [
++        { "path": "**/*" },
++        { "path": "$XDG_DATA_HOME/MXU/**" },
++        { "path": "$HOME/.local/share/MXU/**" },
++        { "path": "$MXU_DATA_DIR/**" }
++      ]
+     },
+     {
+       "identifier": "fs:allow-read-dir",
+-      "allow": [{ "path": "**/*" }]
++      "allow": [
++        { "path": "**/*" },
++        { "path": "$XDG_DATA_HOME/MXU/**" },
++        { "path": "$HOME/.local/share/MXU/**" },
++        { "path": "$MXU_DATA_DIR/**" }
++      ]
+     },
+     {
+       "identifier": "fs:allow-rename",
+-      "allow": [{ "path": "**/*" }]
++      "allow": [
++        { "path": "**/*" },
++        { "path": "$XDG_DATA_HOME/MXU/**" },
++        { "path": "$HOME/.local/share/MXU/**" },
++        { "path": "$MXU_DATA_DIR/**" }
++      ]
+     },
+     "fs:allow-appdata-read-recursive",
+     "fs:allow-appdata-write-recursive",
