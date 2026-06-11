@@ -44,6 +44,8 @@ rustPlatform.buildRustPackage (finalAttrs: {
     ./0001-data-dir.patch
     # Allow plugin-fs access to MXU data directories.
     ./0002-capability.patch
+    # Disable auto update
+    ./0003-disable-autoupdate.patch
   ];
 
   # write version to config files, as what they should be
