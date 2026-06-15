@@ -1,7 +1,7 @@
 {
   "beta": {
-    "version": "2.16.0-beta.2",
-    "srcHash": "sha256-r+PEo5te3S2iBhZrUaD2xTEJAhwNkx/1TnN+26h6828=",
+    "version": "2.16.0-beta.3",
+    "srcHash": "sha256-eZByiHd0m0DUkuS5H+Kf+iW/ant4FzKVH8GQwGwQ6hw=",
     "vendorHash": "sha256-pgL/rP28YN0q49yPyBN3DTvwn/xdcKF1BE74gBuyyrU="
   },
   "stable": {
