@@ -12,8 +12,6 @@
   stdenv,
   wayland,
   zlib,
-
-  withCli ? false,
 }:
 
 let
@@ -22,7 +20,7 @@ in
 
 stdenv.mkDerivation (finalAttrs: {
   pname = "maa-framework";
-  version = "5.10.5";
+  version = "5.11.0";
 
   __structuredAttrs = true;
   strictDeps = true;
@@ -32,7 +30,7 @@ stdenv.mkDerivation (finalAttrs: {
     repo = "MaaFramework";
     rev = "v${finalAttrs.version}";
     fetchSubmodules = true;
-    sha256 = "sha256-/XglJ4kXpLYeBFODp4BmFrsoa934MueGR09/UUaOJmc=";
+    sha256 = "sha256-ntTGim+XBVtCsCZacijRyrfirNoEU0U/s6VVxUhvFvQ=";
   };
 
   nativeBuildInputs = [
@@ -53,8 +51,6 @@ stdenv.mkDerivation (finalAttrs: {
 
   patches = [
     ./handle-EINTR.patch
-  ]
-  ++ lib.optionals withCli [
     ./picli-path-resolution.patch
   ];
 
@@ -80,10 +76,6 @@ stdenv.mkDerivation (finalAttrs: {
     # disable thin LTO
     substituteInPlace source/MaaUtils/cmake/config.cmake \
       --replace-fail '-flto=thin' ""
-
-    # fix -Werror=format
-    substituteInPlace source/MaaToolkit/DesktopWindow/DesktopWindowLinuxFinder.cpp \
-      --replace-fail "wayland-%d" "wayland-%u"
   '';
 
   # make empty dir to suppress warnings
@@ -93,11 +85,9 @@ stdenv.mkDerivation (finalAttrs: {
   '';
 
   cmakeFlags = [
-    (lib.cmakeBool "WITH_RPATH_LIBRARY" false)
     (lib.cmakeFeature "MAA_HASH_VERSION" finalAttrs.version)
-  ]
-  ++ lib.optionals (!withCli) [
-    (lib.cmakeBool "BUILD_PICLI" false)
+    (lib.cmakeBool "WITH_KWIN_CONTROLLER" false) # build problem
+    (lib.cmakeBool "WITH_RPATH_LIBRARY" false)
   ];
 
   meta = {
