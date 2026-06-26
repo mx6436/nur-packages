@@ -40,7 +40,7 @@ stdenv.mkDerivation (finalAttrs: {
   ];
 
   patches = [
-    ./0001-cpp-data-dir.patch
+    ./0001-xdg-data-dir.patch
   ];
 
   postPatch = ''
