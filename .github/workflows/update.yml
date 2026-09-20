@@ -26,6 +26,11 @@ jobs:
         with:
           nix_path: nixpkgs=channel:nixos-unstable
 
+      - name: configure git
+        run: |
+          git config user.name "github actions"
+          git config user.email "actions@github.com"
+
       - name: update reliquary-archiver
         run: |
           chmod +x pkgs/reliquary-archiver/update.fish
@@ -33,9 +38,6 @@ jobs:
 
       - name: commit & push reliquary-archiver
         run: |
-          git config user.name "github actions"
-          git config user.email "actions@github.com"
-
           if ! git diff --quiet pkgs/reliquary-archiver/manifest.json; then
             OLD_REV=$(git show HEAD:pkgs/reliquary-archiver/manifest.json | jq -r '.gameDataRev' 2>/dev/null || echo "unknown")
             NEW_REV=$(jq -r '.gameDataRev' pkgs/reliquary-archiver/manifest.json)
@@ -47,30 +49,23 @@ jobs:
             echo "No changes to commit"
           fi
 
+      # maaend 的 update.fish 只依赖 PATH 中的工具，这里通过 nix shell 提供
       - name: update maaend
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           chmod +x pkgs/maaend/update.fish
-          pkgs/maaend/update.fish
+          nix shell nixpkgs#fish nixpkgs#nix nixpkgs#jq nixpkgs#curl nixpkgs#gnused nixpkgs#git \
+            --command fish pkgs/maaend/update.fish
 
       - name: commit & push maaend
         run: |
-          if ! git diff --quiet pkgs/maaend/version.json; then
-            OLD_BETA=$(git show HEAD:pkgs/maaend/version.json | jq -r '.beta.version')
-            OLD_STABLE=$(git show HEAD:pkgs/maaend/version.json | jq -r '.stable.version')
-            NEW_BETA=$(jq -r '.beta.version' pkgs/maaend/version.json)
-            NEW_STABLE=$(jq -r '.stable.version' pkgs/maaend/version.json)
+          if ! git diff --quiet pkgs/maaend/package.nix; then
+            OLD_VERSION=$(git show HEAD:pkgs/maaend/package.nix | sed -nE 's/^  version = "(.*)";$/\1/p')
+            NEW_VERSION=$(sed -nE 's/^  version = "(.*)";$/\1/p' pkgs/maaend/package.nix)
 
-            if [ "$OLD_BETA" != "$NEW_BETA" ]; then
-              MSG="maaend-beta: $OLD_BETA -> $NEW_BETA"
-            elif [ "$OLD_STABLE" != "$NEW_STABLE" ]; then
-              MSG="maaend: $OLD_STABLE -> $NEW_STABLE"
-            else
-              echo "No variant version changed, skipping commit"
-              exit 0
-            fi
-
-            git add pkgs/maaend/version.json
-            git commit -m "$MSG"
+            git add pkgs/maaend/package.nix
+            git commit -m "maaend: ${OLD_VERSION} -> ${NEW_VERSION}"
             git push
           else
             echo "No changes to maaend"
