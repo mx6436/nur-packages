@@ -16,6 +16,22 @@
 
 let
   fastdeploy-ppocr = callPackage ./fastdeploy-ppocr.nix { };
+
+  # upstream git submodules, pinned to the commits recorded in MaaFramework
+  MaaUtils = fetchFromGitHub {
+    owner = "MaaXYZ";
+    repo = "MaaUtils";
+    rev = "3011f690e4d33ea0328974c03cd899f3bb5a899f";
+    hash = "sha256-GLSg+oQjjYkIShvKovqdCOV4IEXBo5H2umjUCiN7X/k=";
+  };
+
+  # runtime agent binaries, installed to $out/share/MaaAgentBinary
+  MaaAgentBinary = fetchFromGitHub {
+    owner = "MaaXYZ";
+    repo = "MaaAgentBinary";
+    rev = "173d43c4b5518064b27720b0cf08c781f291eba9";
+    hash = "sha256-rj2ZropXC1BwNaMh9NfMxqBEKE5Tx8Eo/x677MglaqI=";
+  };
 in
 
 stdenv.mkDerivation (finalAttrs: {
@@ -28,9 +44,8 @@ stdenv.mkDerivation (finalAttrs: {
   src = fetchFromGitHub {
     owner = "MaaXYZ";
     repo = "MaaFramework";
-    rev = "v${finalAttrs.version}";
-    fetchSubmodules = true;
-    sha256 = "sha256-/M4A0CXGPy+wOlSovt0vPompQQz9y7Jx2apoxyaCsPM=";
+    tag = "v${finalAttrs.version}";
+    sha256 = "sha256-+xriyiy38cWkwZlw0FrInBTRfOtJP34xZZyNXOJq7GY=";
   };
 
   nativeBuildInputs = [
@@ -48,6 +63,18 @@ stdenv.mkDerivation (finalAttrs: {
     wayland.dev
     zlib
   ];
+
+  # submodules
+  postUnpack = ''
+    # contains source/MaaUtils/MaaUtils.cmake
+    rm -rf "$sourceRoot/source/MaaUtils"
+    cp -r --reflink=auto ${MaaUtils} "$sourceRoot/source/MaaUtils"
+    chmod -R u+w "$sourceRoot/source/MaaUtils"
+
+    rm -rf "$sourceRoot/3rdparty/MaaAgentBinary"
+    cp -r --reflink=auto ${MaaAgentBinary} "$sourceRoot/3rdparty/MaaAgentBinary"
+    chmod -R u+w "$sourceRoot/3rdparty/MaaAgentBinary"
+  '';
 
   patches = [
     ./handle-EINTR.patch
