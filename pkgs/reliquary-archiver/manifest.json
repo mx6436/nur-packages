@@ -1,17 +1,17 @@
 {
-  "gameDataRev": "d5c40c0095bc5fdef9ce968c078304a95caab235",
+  "gameDataRev": "4ce30f69b32dc259ab9a8da3ba57035485103221",
   "files": {
-    "AvatarConfig.json": "sha256-8O1XQNtCJl7h8+bG2uiktfxPY9wNa2DDBxfW7XhCMHE=",
-    "AvatarConfigLD.json": "sha256-vUbEta5WhV4YAX1lu1Vya3ey0jqztIexW4KV0mVfR0g=",
-    "EquipmentConfig.json": "sha256-a83poYlpI56IdTojemYUX4pG0QlZKe+wCuSQlWK9LxQ=",
-    "RelicSetConfig.json": "sha256-/zQ855WRiioYrY7evxtIQUMxWKxUSM6BqZ6u3ozxDZw=",
-    "ItemConfig.json": "sha256-7kiYJkXM6exhjqeTyGGqKYE1wQFBwRp2snDJo8BplYI=",
-    "AvatarSkillTreeConfig.json": "sha256-Xm1ssUoBmkcxYm9xEuttJNbkpyG2O8bB3Dgt3lcSyvI=",
-    "AvatarSkillTreeConfigLD.json": "sha256-9DJBB3ayCeWy55uciLpRe2LxtJio9cEUod2UG6colYQ=",
+    "AvatarConfig.json": "sha256-SCm/wCv+N36SrmY79eIdxZ5tZuND9//kHLTNlvmvWCY=",
+    "AvatarConfigLD.json": "sha256-doQQlapkStJXVccHx54mC+jUuG6iANZunUaFU2qAdzA=",
+    "EquipmentConfig.json": "sha256-1JQNtYhOfiVrwedAAogG0/FUDTIYBBmD18C4+qi6pKs=",
+    "RelicSetConfig.json": "sha256-CsCRM28n2MhmUosAYU21M+NL9fIEpUKbX+v3OjAydCg=",
+    "ItemConfig.json": "sha256-Ep79RjVtR8zO3thbf+lKiyA1eW+s4k4NzXiPugKPhus=",
+    "AvatarSkillTreeConfig.json": "sha256-cc5CNQ7wMYauJ+8G2HeI/CgCJvcFLjGphOUBn582VfM=",
+    "AvatarSkillTreeConfigLD.json": "sha256-rQ9M9FaQURljbzOeSCg7DsfSd9qQKRJczzPKYx3bSXs=",
     "MultiplePathAvatarConfig.json": "sha256-cFVt65zPOM70Pib0jhqWBxHEFk14AMrP9pj/Ko6ebVk=",
-    "RelicConfig.json": "sha256-jl759W6VcgzNp237vcO8aO6ZeBd09zSe4oXPKP5HNuk=",
+    "RelicConfig.json": "sha256-sgqQyS1R5bXiaB3PsYSpJBeJYhAotEVk+tvhiiIGuxQ=",
     "RelicMainAffixConfig.json": "sha256-EtKxp0untMcrCOrtq9T+KAS/kJNWd2qBC4vLPJzW7Is=",
     "RelicSubAffixConfig.json": "sha256-UuxusWfanSzXvOdpYNgDH3md4l9L7NfxX00lOg+Uiec=",
-    "TextMapEN.json": "sha256-X2zOltmsl6V1dSbmDS6k7bUQWfhcETNJGQ206qn511I="
+    "TextMapEN.json": "sha256-By8QdOvE3e0qyY4r/R01YueWumYthDBi8339NYHGFo8="
   }
 }
