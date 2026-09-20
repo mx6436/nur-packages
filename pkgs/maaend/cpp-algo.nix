@@ -2,6 +2,7 @@
   pname,
   version,
   src,
+  maaUtils,
   meta,
 
   boost187,
@@ -42,6 +43,13 @@ stdenv.mkDerivation (finalAttrs: {
   patches = [
     ./0002-cpp-data-dir.patch
   ];
+
+  # MaaUtils submodule
+  prePatch = ''
+    rm -rf agent/cpp-algo/MaaUtils
+    cp -r ${maaUtils} agent/cpp-algo/MaaUtils
+    chmod -R u+w agent/cpp-algo/MaaUtils
+  '';
 
   postPatch = ''
     # Build against Nix-provided dependencies instead of MaaDeps.

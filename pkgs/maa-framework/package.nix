@@ -103,12 +103,12 @@ stdenv.mkDerivation (finalAttrs: {
     # disable thin LTO
     substituteInPlace source/MaaUtils/cmake/config.cmake \
       --replace-fail '-flto=thin' ""
-    
+
     substituteInPlace source/MaaUtils/MaaUtils.cmake \
       --replace-fail \
       "OpenCV REQUIRED COMPONENTS core imgproc imgcodecs" \
       "OpenCV REQUIRED COMPONENTS core imgproc imgcodecs features2d calib3d flann"
-    
+
     # gcc 在 -Wpedantic 下无法编译 PipeWire/SPA 头文件里的 GNU 复合字面量
     substituteInPlace source/MaaUtils/cmake/config.cmake \
       --replace-fail '"-Wall;-Werror;-Wextra;-Wpedantic;-Wno-missing-field-initializers"' \

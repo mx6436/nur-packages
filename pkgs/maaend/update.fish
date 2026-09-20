@@ -1,7 +1,15 @@
-#!/usr/bin/env -S nix shell nixpkgs#fish nixpkgs#nix nixpkgs#jq nixpkgs#curl nixpkgs#gnused nixpkgs#nix-prefetch-git --command fish
+#!/usr/bin/env -S nix shell nixpkgs#fish nixpkgs#nix nixpkgs#jq nixpkgs#curl nixpkgs#gnused nixpkgs#git --command fish
 
 set repo MaaEnd/MaaEnd
 set pkg_file pkgs/maaend/package.nix
+
+# submodules fetched as tarballs: <path> <GitHub repo> <nix var prefix>
+set submodules \
+    "agent/cpp-algo/MaaUtils MaaXYZ/MaaUtils maaUtils" \
+    "assets/resource/model MaaEnd/MaaEnd-AI maaendAi"
+
+# test fixtures only, not packaged
+set ignored_submodules tests/MaaEndTestset
 
 echo "--- Fetching latest release ---"
 
@@ -30,26 +38,71 @@ end
 
 echo "Updating: $current_version -> $new_version"
 
-echo "--- Computing srcHash ---"
-set git_result (nix-prefetch-git --url "https://github.com/$repo" --rev "$tag_name" --fetch-submodules 2>/dev/null)
-or begin
-    echo "ERROR: Failed to run nix-prefetch-git"
-    exit 1
-end
-set src_hash (echo $git_result | jq -er .hash)
-or begin
-    echo "ERROR: Failed to parse srcHash from nix-prefetch-git output"
-    exit 1
-end
-echo "srcHash: $src_hash"
-
-echo "--- Computing vendorHash ---"
 set tmpdir (mktemp -d)
 
 function cleanup_tempdir --on-event fish_exit --on-signal INT --on-signal TERM
     rm -rf $tmpdir
 end
 
+echo "--- Computing srcHash ---"
+set src_hash (nix-prefetch-url --unpack "https://github.com/$repo/archive/$tag_name.tar.gz" 2>/dev/null)
+if test -z "$src_hash"
+    echo "ERROR: Failed to compute srcHash"
+    exit 1
+end
+set src_hash (nix hash convert --hash-algo sha256 --to sri $src_hash)
+echo "srcHash: $src_hash"
+
+echo "--- Resolving submodule revisions ---"
+git clone --quiet --filter=blob:none --no-checkout --depth 1 --branch $tag_name "https://github.com/$repo" $tmpdir/repo
+or begin
+    echo "ERROR: Failed to clone $repo at $tag_name"
+    exit 1
+end
+
+git -C $tmpdir/repo show HEAD:.gitmodules > $tmpdir/gitmodules
+set declared_paths (git config -f $tmpdir/gitmodules --get-regexp '\.path$' | string replace -r '^\S+\s+' '')
+
+set sed_args
+set mapped_paths
+for entry in $submodules
+    set fields (string split ' ' -- $entry)
+    set path $fields[1]
+    set slug $fields[2]
+    set prefix $fields[3]
+    set -a mapped_paths $path
+
+    set rev (string match -rg '^160000 commit ([0-9a-f]+)' -- (git -C $tmpdir/repo ls-tree HEAD $path))
+    if test -z "$rev"
+        echo "ERROR: Failed to resolve submodule revision for $path"
+        exit 1
+    end
+
+    set sub_hash (nix-prefetch-url --unpack "https://github.com/$slug/archive/$rev.tar.gz" 2>/dev/null)
+    if test -z "$sub_hash"
+        echo "ERROR: Failed to compute hash for $slug at $rev"
+        exit 1
+    end
+    set sub_hash (nix hash convert --hash-algo sha256 --to sri $sub_hash)
+
+    set rev_var "$prefix"Rev
+    set hash_var "$prefix"Hash
+
+    echo "$path: $rev"
+    echo "$hash_var: $sub_hash"
+
+    set -a sed_args -e "s|^  $rev_var = \".*\";\$|  $rev_var = \"$rev\";|"
+    set -a sed_args -e "s|^  $hash_var = \".*\";\$|  $hash_var = \"$sub_hash\";|"
+end
+
+for declared in $declared_paths
+    if contains -- $declared $mapped_paths; or contains -- $declared $ignored_submodules
+        continue
+    end
+    echo "WARNING: upstream submodule $declared is not handled by this script"
+end
+
+echo "--- Computing vendorHash ---"
 set temp_nix $tmpdir/vendor-fetch.nix
 echo '
 {
@@ -65,7 +118,6 @@ buildGoModule {
     repo = "MaaEnd";
     rev = "'"$tag_name"'";
     hash = "'"$src_hash"'";
-    fetchSubmodules = true;
   };
   vendorHash = lib.fakeHash;
   modRoot = "agent/go-service";
@@ -89,6 +141,6 @@ sed -i -E \
     -e "s|^  version = \".*\";\$|  version = \"$new_version\";|" \
     -e "s|^  srcHash = \".*\";\$|  srcHash = \"$src_hash\";|" \
     -e "s|^  vendorHash = \".*\";\$|  vendorHash = \"$vendor_hash\";|" \
-    $pkg_file
+    $sed_args $pkg_file
 
 echo "--- Updated to v$new_version ---"

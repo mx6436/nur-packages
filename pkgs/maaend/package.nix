@@ -15,15 +15,36 @@
 let
   pname = "maaend";
   version = "2.19.0";
-  srcHash = "sha256-k5TrBIUnubu/2S2/X7Ndy/9C4kvNtpSGXyl4UnQCoKo=";
+  srcHash = "sha256-Zp4jpME5fIr0bvc08UEXACvMYzTsAVcXl+n4JDj5/FU=";
   vendorHash = "sha256-pgL/rP28YN0q49yPyBN3DTvwn/xdcKF1BE74gBuyyrU=";
+
+  # submodule revisions/hashes, fetched separately instead of with fetchSubmodules
+  maaUtilsRev = "f53406a6146d4c9fd4bcbaffcfd9e70865676903";
+  maaUtilsHash = "sha256-EfcQbQj5yz/wFQwjdv23Pj4io/aS5e7b8e6l4oclZUQ=";
+  maaendAiRev = "563373e0ce58f2bac5e07625618a2f83e442cf30";
+  maaendAiHash = "sha256-4Hi6vqhuTdJ4Q1p0iQIOedd/ZxUKOKNElTsDgZpBRxw=";
 
   src = fetchFromGitHub {
     owner = "MaaEnd";
     repo = "MaaEnd";
     tag = "v${version}";
     hash = srcHash;
-    fetchSubmodules = true;
+  };
+
+  # agent/cpp-algo/MaaUtils
+  maaUtils = fetchFromGitHub {
+    owner = "MaaXYZ";
+    repo = "MaaUtils";
+    rev = maaUtilsRev;
+    hash = maaUtilsHash;
+  };
+
+  # assets/resource/model
+  maaendAi = fetchFromGitHub {
+    owner = "MaaEnd";
+    repo = "MaaEnd-AI";
+    rev = maaendAiRev;
+    hash = maaendAiHash;
   };
 
   go-service = callPackage ./go-service.nix {
@@ -41,6 +62,7 @@ let
       pname
       version
       src
+      maaUtils
       meta
       ;
   };
@@ -95,6 +117,10 @@ stdenvNoCC.mkDerivation (finalAttrs: {
     cp ${go-service}/bin/go-service $out/lib/agent/go-service
     cp ${cpp-algo}/agent/cpp-algo $out/lib/agent/cpp-algo
     cp -r assets/. $out/lib
+    rm -rf $out/lib/resource/model
+    # assets/resource/model
+    ln -s ${maaendAi} $out/lib/resource/model
+
     cp README.md $out/lib/README.md
     cp LICENSE $out/lib/LICENSE
     cp $out/lib/locales/MaaEnd-Tiny.png $out/share/icons/hicolor/512x512/apps/MaaEnd-Tiny.png
