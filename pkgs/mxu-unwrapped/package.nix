@@ -17,7 +17,7 @@
 
 rustPlatform.buildRustPackage (finalAttrs: {
   pname = "mxu-unwrapped";
-  version = "2.1.7";
+  version = "2.5.3";
 
   __structuredAttrs = true;
 
@@ -25,10 +25,10 @@ rustPlatform.buildRustPackage (finalAttrs: {
     owner = "MistEO";
     repo = "MXU";
     rev = "v${finalAttrs.version}";
-    hash = "sha256-PHcxDwB2zRJG3mzSuXd6u5YlEoWg/jRkXqek1haQuD0=";
+    hash = "sha256-v6QnYrfDQuU0KLwkbTjFp8asDydV1SllWbZ9kkmye1I=";
   };
 
-  cargoHash = "sha256-YmsSxxyOiMiIEmf3Pnh5mHEuS5vg02J3KhMCEcHtcBA=";
+  cargoHash = "sha256-uxL66urnN64iCU7BgbOrAUds9YSE+W4cnqeeGrkoCTc=";
   cargoRoot = "src-tauri";
   buildAndTestSubdir = finalAttrs.cargoRoot;
 
