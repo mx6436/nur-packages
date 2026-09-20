@@ -1,4 +1,19 @@
-#!/usr/bin/env -S nix shell nixpkgs#fish nixpkgs#nix nixpkgs#jq nixpkgs#curl nixpkgs#gnused nixpkgs#git --command fish
+#!/usr/bin/env fish
+
+# Updater for pkgs/maaend.
+#
+# Requires: fish, curl, jq, git, gnused, nix (with nix-prefetch-url) in PATH,
+# and a nixpkgs checkout reachable through NIX_PATH (for the vendorHash probe).
+# When run outside of such an environment, e.g. in CI, use:
+#   nix shell nixpkgs#fish nixpkgs#nix nixpkgs#jq nixpkgs#curl nixpkgs#gnused nixpkgs#git \
+#     --command fish pkgs/maaend/update.fish
+
+for tool in curl jq git sed nix nix-prefetch-url
+    if not command -q $tool
+        echo "ERROR: '$tool' is required but was not found in PATH" >&2
+        exit 1
+    end
+end
 
 set repo MaaEnd/MaaEnd
 set pkg_file pkgs/maaend/package.nix
@@ -13,17 +28,43 @@ set ignored_submodules tests/MaaEndTestset
 
 echo "--- Fetching latest release ---"
 
-set response (curl -fsS "https://api.github.com/repos/$repo/releases/latest")
-or begin
-    echo "ERROR: Failed to fetch release info"
+# The GitHub API is rate limited for unauthenticated requests (HTTP 403),
+# so use a token when one is available.
+set api_token $GITHUB_TOKEN
+if test -z "$api_token"
+    set api_token $GH_TOKEN
+end
+if test -z "$api_token"; and command -q gh
+    set api_token (gh auth token 2>/dev/null)
+end
+
+set curl_args -fsS
+if test -n "$api_token"
+    set -a curl_args -H "Authorization: Bearer $api_token"
+end
+
+set tag_name
+set response (curl $curl_args "https://api.github.com/repos/$repo/releases/latest" 2>/dev/null)
+if test -n "$response"
+    set tag_name (echo $response | jq -er '.tag_name' 2>/dev/null)
+end
+
+if test -z "$tag_name"
+    # Fall back to the tag list, skipping pre-release tags (v1.2.3-rc.1, ...).
+    echo "GitHub API unavailable (rate limited?), falling back to git ls-remote"
+    set tags (git ls-remote --tags --refs --sort=v:refname "https://github.com/$repo" \
+        | string replace -r '^.*refs/tags/' '' \
+        | string match -rv -- '-')
+    if test -n "$tags"
+        set tag_name $tags[-1]
+    end
+end
+
+if test -z "$tag_name"
+    echo "ERROR: Failed to determine the latest stable release"
     exit 1
 end
 
-set tag_name (echo $response | jq -er '.tag_name')
-or begin
-    echo "ERROR: Failed to parse tag_name"
-    exit 1
-end
 set new_version (string replace -r '^v' '' $tag_name)
 
 set current_version (sed -n -E 's/^  version = "(.*)";$/\1/p' $pkg_file)
