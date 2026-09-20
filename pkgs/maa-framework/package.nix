@@ -3,12 +3,16 @@
   callPackage,
   cmake,
   cppzmq,
+  dbus,
   fetchFromGitHub,
   lib,
+  libei,
   libffi,
   libsodium,
   onnxruntime,
   opencv,
+  pipewire,
+  pkg-config,
   stdenv,
   wayland,
   zlib,
@@ -21,8 +25,8 @@ let
   MaaUtils = fetchFromGitHub {
     owner = "MaaXYZ";
     repo = "MaaUtils";
-    rev = "3011f690e4d33ea0328974c03cd899f3bb5a899f";
-    hash = "sha256-GLSg+oQjjYkIShvKovqdCOV4IEXBo5H2umjUCiN7X/k=";
+    rev = "6e9ba33f6ad835418097d9324c01c44a82825a2b";
+    hash = "sha256-g6FoqD3EBldHwgULILmxxR9rJajBP5fm6YJynUA8TFY=";
   };
 
   # runtime agent binaries, installed to $out/share/MaaAgentBinary
@@ -36,7 +40,7 @@ in
 
 stdenv.mkDerivation (finalAttrs: {
   pname = "maa-framework";
-  version = "5.11.1";
+  version = "5.14.0-beta.1";
 
   __structuredAttrs = true;
   strictDeps = true;
@@ -45,22 +49,26 @@ stdenv.mkDerivation (finalAttrs: {
     owner = "MaaXYZ";
     repo = "MaaFramework";
     tag = "v${finalAttrs.version}";
-    sha256 = "sha256-+xriyiy38cWkwZlw0FrInBTRfOtJP34xZZyNXOJq7GY=";
+    sha256 = "sha256-s4POqpXtIVGQ3qhlEvi0xDQN0s7J+ioh8kZDZamytRs=";
   };
 
   nativeBuildInputs = [
     cmake
+    pkg-config
   ];
 
   buildInputs = [
     boost187 # 1.87.0 is the last version compatible
     cppzmq
+    dbus
     fastdeploy-ppocr
+    libei
     libffi
     libsodium
     onnxruntime
     opencv
-    wayland.dev
+    pipewire
+    wayland
     zlib
   ];
 
@@ -76,20 +84,13 @@ stdenv.mkDerivation (finalAttrs: {
     chmod -R u+w "$sourceRoot/3rdparty/MaaAgentBinary"
   '';
 
-  patches = [
-    ./handle-EINTR.patch
-  ];
-
   postPatch = ''
     # remove the dependency on MaaDeps, which is replaced by the above buildInputs
     substituteInPlace CMakeLists.txt \
       --replace-fail 'maadeps_install(bin)' ""
 
     substituteInPlace source/MaaUtils/MaaUtils.cmake \
-      --replace-fail 'include(''${MAADEPS_DIR}/maadeps.cmake)' "" \
-      --replace-fail \
-      "OpenCV REQUIRED COMPONENTS core imgproc imgcodecs" \
-      "OpenCV REQUIRED COMPONENTS core imgproc imgcodecs features2d calib3d flann"
+      --replace-fail 'include(''${MAADEPS_DIR}/maadeps.cmake)' ""
 
     substituteInPlace source/MaaUtils/cmake/utils.cmake \
       --replace-fail "detect_maadeps_triplet(MAADEPS_TRIPLET)" ""
@@ -102,6 +103,16 @@ stdenv.mkDerivation (finalAttrs: {
     # disable thin LTO
     substituteInPlace source/MaaUtils/cmake/config.cmake \
       --replace-fail '-flto=thin' ""
+    
+    substituteInPlace source/MaaUtils/MaaUtils.cmake \
+      --replace-fail \
+      "OpenCV REQUIRED COMPONENTS core imgproc imgcodecs" \
+      "OpenCV REQUIRED COMPONENTS core imgproc imgcodecs features2d calib3d flann"
+    
+    # gcc 在 -Wpedantic 下无法编译 PipeWire/SPA 头文件里的 GNU 复合字面量
+    substituteInPlace source/MaaUtils/cmake/config.cmake \
+      --replace-fail '"-Wall;-Werror;-Wextra;-Wpedantic;-Wno-missing-field-initializers"' \
+      '"-Wall;-Werror;-Wextra;-Wno-missing-field-initializers"'
   '';
 
   # make empty dir to suppress warnings
@@ -112,7 +123,6 @@ stdenv.mkDerivation (finalAttrs: {
 
   cmakeFlags = [
     (lib.cmakeFeature "MAA_HASH_VERSION" finalAttrs.version)
-    (lib.cmakeBool "WITH_KWIN_CONTROLLER" false) # build problem
     (lib.cmakeBool "WITH_RPATH_LIBRARY" false)
     (lib.cmakeBool "BUILD_PICLI" false)
   ];
