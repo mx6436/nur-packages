@@ -26,7 +26,7 @@ in
 
 rustPlatform.buildRustPackage (finalAttrs: {
   pname = "reliquary-archiver";
-  version = "0.16.0";
+  version = "0.18.0";
 
   __structuredAttrs = true;
 
@@ -34,10 +34,10 @@ rustPlatform.buildRustPackage (finalAttrs: {
     owner = "IceDynamix";
     repo = "reliquary-archiver";
     tag = "v${finalAttrs.version}";
-    hash = "sha256-HyA5Oy/UdaFb53Y7JPkrmSWHAXnER3S26vE+wSlUW3U=";
+    hash = "sha256-yRCWngwtRGs4UvIxIcWCwCdmjPITEJlwLaI7ueVjU3U=";
   };
 
-  cargoHash = "sha256-pl45xKN+h6TKfJ5mPUtM8yJPYpTwgu238Z+Wp4Ye4Ds=";
+  cargoHash = "sha256-I2bExs+NK5L3QW9i8mN/oSPBm9xEyJn0dzWHlX4VmF0=";
 
   nativeBuildInputs = [ pkg-config ];
 
