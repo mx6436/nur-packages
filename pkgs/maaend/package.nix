@@ -15,36 +15,30 @@
 let
   pname = "maaend";
   version = "2.29.0";
-  srcHash = "sha256-0hhHQA/KquQ56LvKDsm46dQ7tyXm4OidPHR9QoKwV7c=";
-  vendorHash = "sha256-0xZ9CVPVp1szC+7x95R1Ua3Bvt6N6x/mewAsdAJuM3A=";
-
-  # submodule revisions/hashes, fetched separately instead of with fetchSubmodules
-  maaUtilsRev = "6e9ba33f6ad835418097d9324c01c44a82825a2b";
-  maaUtilsHash = "sha256-g6FoqD3EBldHwgULILmxxR9rJajBP5fm6YJynUA8TFY=";
-  maaendAiRev = "4f6abd93b4a04d4d4b6cf406e8d8bd7c20c20491";
-  maaendAiHash = "sha256-rS1fw4NZQw5gurphhq9BuF7mXIhtKFeNDGCTu0d2mng=";
 
   src = fetchFromGitHub {
     owner = "MaaEnd";
     repo = "MaaEnd";
     tag = "v${version}";
-    hash = srcHash;
+    hash = "sha256-0hhHQA/KquQ56LvKDsm46dQ7tyXm4OidPHR9QoKwV7c=";
   };
+
+  # submodules are fetched as separate tarballs instead of with fetchSubmodules
 
   # agent/cpp-algo/MaaUtils
   maaUtils = fetchFromGitHub {
     owner = "MaaXYZ";
     repo = "MaaUtils";
-    rev = maaUtilsRev;
-    hash = maaUtilsHash;
+    rev = "6e9ba33f6ad835418097d9324c01c44a82825a2b";
+    hash = "sha256-g6FoqD3EBldHwgULILmxxR9rJajBP5fm6YJynUA8TFY=";
   };
 
   # assets/resource/model
   maaendAi = fetchFromGitHub {
     owner = "MaaEnd";
     repo = "MaaEnd-AI";
-    rev = maaendAiRev;
-    hash = maaendAiHash;
+    rev = "4f6abd93b4a04d4d4b6cf406e8d8bd7c20c20491";
+    hash = "sha256-rS1fw4NZQw5gurphhq9BuF7mXIhtKFeNDGCTu0d2mng=";
   };
 
   go-service = callPackage ./go-service.nix {
@@ -52,7 +46,6 @@ let
       pname
       version
       src
-      vendorHash
       meta
       ;
   };

@@ -3,7 +3,6 @@
   version,
   src,
   meta,
-  vendorHash,
 
   buildGoModule,
 }:
@@ -14,8 +13,9 @@ buildGoModule (finalAttrs: {
     version
     src
     meta
-    vendorHash
     ;
+
+  vendorHash = "sha256-0xZ9CVPVp1szC+7x95R1Ua3Bvt6N6x/mewAsdAJuM3A=";
 
   __structuredAttrs = true;
 
