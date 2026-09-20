@@ -59,6 +59,10 @@ stdenv.mkDerivation (finalAttrs: {
     substituteInPlace agent/cpp-algo/MaaUtils/cmake/utils.cmake \
       --replace-fail 'detect_maadeps_triplet(MAADEPS_TRIPLET)' ""
 
+    # gcc 不支持 -flto=thin。
+    substituteInPlace agent/cpp-algo/MaaUtils/cmake/config.cmake \
+      --replace-fail '-flto=thin' ""
+
     # Resolve framework paths from the packaged maa-framework output.
     substituteInPlace agent/cpp-algo/CMakeLists.txt \
       --replace-fail 'DEPS_DIR ''${CMAKE_CURRENT_SOURCE_DIR}/../../deps' 'DEPS_DIR ${maa-framework}' \
@@ -66,6 +70,8 @@ stdenv.mkDerivation (finalAttrs: {
 
     # MaaUtils is provided by maa-framework, not this build tree.
     substituteInPlace agent/cpp-algo/source/CMakeLists.txt \
+      --replace-fail "add_dependencies(icon-recognition-core MaaUtils)" "" \
+      --replace-fail "add_dependencies(recogrid MaaUtils)" "" \
       --replace-fail "add_dependencies(cpp-algo MaaUtils)" ""
   '';
 

@@ -14,15 +14,15 @@
 
 let
   pname = "maaend";
-  version = "2.19.0";
-  srcHash = "sha256-Zp4jpME5fIr0bvc08UEXACvMYzTsAVcXl+n4JDj5/FU=";
-  vendorHash = "sha256-pgL/rP28YN0q49yPyBN3DTvwn/xdcKF1BE74gBuyyrU=";
+  version = "2.29.0";
+  srcHash = "sha256-0hhHQA/KquQ56LvKDsm46dQ7tyXm4OidPHR9QoKwV7c=";
+  vendorHash = "sha256-0xZ9CVPVp1szC+7x95R1Ua3Bvt6N6x/mewAsdAJuM3A=";
 
   # submodule revisions/hashes, fetched separately instead of with fetchSubmodules
-  maaUtilsRev = "f53406a6146d4c9fd4bcbaffcfd9e70865676903";
-  maaUtilsHash = "sha256-EfcQbQj5yz/wFQwjdv23Pj4io/aS5e7b8e6l4oclZUQ=";
-  maaendAiRev = "563373e0ce58f2bac5e07625618a2f83e442cf30";
-  maaendAiHash = "sha256-4Hi6vqhuTdJ4Q1p0iQIOedd/ZxUKOKNElTsDgZpBRxw=";
+  maaUtilsRev = "6e9ba33f6ad835418097d9324c01c44a82825a2b";
+  maaUtilsHash = "sha256-g6FoqD3EBldHwgULILmxxR9rJajBP5fm6YJynUA8TFY=";
+  maaendAiRev = "4f6abd93b4a04d4d4b6cf406e8d8bd7c20c20491";
+  maaendAiHash = "sha256-rS1fw4NZQw5gurphhq9BuF7mXIhtKFeNDGCTu0d2mng=";
 
   src = fetchFromGitHub {
     owner = "MaaEnd";
@@ -133,6 +133,10 @@ stdenvNoCC.mkDerivation (finalAttrs: {
       --prefix LD_LIBRARY_PATH : ${lib.makeLibraryPath [ libayatana-appindicator ]}
       --prefix PATH : ${lib.makeBinPath [ android-tools ]}
     )
+
+    # makeDesktopItem 引用不到本包的 $out，这里补成绝对路径。
+    substituteInPlace $out/share/applications/maaend.desktop \
+      --replace-fail "Exec=MaaEnd" "Exec=$out/bin/MaaEnd"
   '';
 
   desktopItems = [
@@ -142,6 +146,8 @@ stdenvNoCC.mkDerivation (finalAttrs: {
       desktopName = "MaaEnd";
       comment = "MAA Helper for Arknights: Endfield";
       icon = "MaaEnd-Tiny";
+      # 实际 WM_CLASS 是 MaaEnd，与文件名大小写不一致。
+      startupWMClass = "MaaEnd";
       exec = "MaaEnd";
       categories = [ "Utility" ];
     })

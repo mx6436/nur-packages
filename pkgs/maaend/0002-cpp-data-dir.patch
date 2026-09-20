@@ -1,17 +1,15 @@
 diff --git a/agent/cpp-algo/source/main.cpp b/agent/cpp-algo/source/main.cpp
-index 17c8738..4ecdd28 100644
+index 5476668..9e2aa99 100644
 --- a/agent/cpp-algo/source/main.cpp
 +++ b/agent/cpp-algo/source/main.cpp
-@@ -1,4 +1,6 @@
- #include <iostream>
+@@ -1,3 +1,4 @@
 +#include <cstdlib>
-+#include <filesystem>
+ #include <filesystem>
+ #include <iostream>
  
- #include <MaaAgentServer/MaaAgentServerAPI.h>
- #include <MaaToolkit/MaaToolkitAPI.h>
-@@ -15,6 +17,21 @@
+@@ -19,6 +20,21 @@
+ #include "my_reco_1/my_reco_1.h"
  #include "utils.h"
- #include "WeaponInventoryScan/WeaponInventoryScan.h"
  
 +namespace {
 +std::filesystem::path getToolkitUserPath()
@@ -31,14 +29,14 @@ index 17c8738..4ecdd28 100644
  int main(int argc, char** argv)
  {
  #ifdef _WIN32
-@@ -36,7 +53,9 @@ int main(int argc, char** argv)
+@@ -40,8 +56,8 @@
  
      // std::cout << "Hello, cpp-algo!" << std::endl;
  
--    MaaToolkitConfigInitOption("./debug/cpp-algo", "{}");
-+    const std::filesystem::path toolkit_user_path = getToolkitUserPath();
-+    const std::string toolkit_user_path_str = toolkit_user_path.string();
-+    MaaToolkitConfigInitOption(toolkit_user_path_str.c_str(), "{}");
+-    constexpr const char* kUserPath = "./debug/cpp-algo";
+-    MaaToolkitConfigInitOption(kUserPath, "{}");
++    const std::filesystem::path kUserPath = getToolkitUserPath();
++    MaaToolkitConfigInitOption(kUserPath.string().c_str(), "{}");
  
-     MaaAgentServerRegisterCustomRecognition("MyReco1", ChildCustomRecognitionCallback, nullptr);
-     MaaAgentServerRegisterCustomRecognition("MapLocateRecognition", maplocator::MapLocateRecognitionRun, nullptr);
+     // 转储落到 maa.log 同一目录，报 issue 打包日志时会一并带上。
+     common::InstallCrashHandler(std::filesystem::path(kUserPath) / "debug");
