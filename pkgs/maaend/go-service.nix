@@ -23,6 +23,6 @@ buildGoModule (finalAttrs: {
   subPackages = [ "." ];
 
   patches = [
-    ./0001-xdg-data-dir.patch
+    ./0001-go-data-dir.patch
   ];
 })

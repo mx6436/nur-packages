@@ -1,41 +1,34 @@
-#!/usr/bin/env -S nix shell nixpkgs#fish nixpkgs#nix nixpkgs#jq nixpkgs#curl nixpkgs#nix-prefetch-git --command fish
+#!/usr/bin/env -S nix shell nixpkgs#fish nixpkgs#nix nixpkgs#jq nixpkgs#curl nixpkgs#gnused nixpkgs#nix-prefetch-git --command fish
 
 set repo MaaEnd/MaaEnd
-set json_file pkgs/maaend/version.json
+set pkg_file pkgs/maaend/package.nix
 
 echo "--- Fetching latest release ---"
 
-set response (curl -fsS "https://api.github.com/repos/$repo/releases?per_page=1")
+set response (curl -fsS "https://api.github.com/repos/$repo/releases/latest")
 or begin
     echo "ERROR: Failed to fetch release info"
     exit 1
 end
 
-set tag_name (echo $response | jq -er '.[0].tag_name')
+set tag_name (echo $response | jq -er '.tag_name')
 or begin
     echo "ERROR: Failed to parse tag_name"
     exit 1
 end
-set is_prerelease (echo $response | jq -r '.[0].prerelease')
-or begin
-    echo "ERROR: Failed to parse prerelease flag"
-    exit 1
-end
 set new_version (string replace -r '^v' '' $tag_name)
 
-set variant stable
-if test "$is_prerelease" = true
-    set variant beta
+set current_version (sed -n -E 's/^  version = "(.*)";$/\1/p' $pkg_file)
+if test -z "$current_version"
+    echo "ERROR: Failed to read current version from $pkg_file"
+    exit 1
 end
-echo "Latest: $tag_name (variant: $variant)"
-
-set current_version (jq -r ".$variant.version" $json_file)
 if test "$current_version" = "$new_version"
     echo "Already up to date: v$new_version"
     exit 0
 end
 
-echo "Updating $variant: $current_version -> $new_version"
+echo "Updating: $current_version -> $new_version"
 
 echo "--- Computing srcHash ---"
 set git_result (nix-prefetch-git --url "https://github.com/$repo" --rev "$tag_name" --fetch-submodules 2>/dev/null)
@@ -91,10 +84,11 @@ end
 
 echo "vendorHash: $vendor_hash"
 
-echo "--- Writing version.json ---"
-jq --arg ver "$new_version" --arg src "$src_hash" --arg vendor "$vendor_hash" \
-    ".$variant.version = \$ver | .$variant.srcHash = \$src | .$variant.vendorHash = \$vendor" \
-    $json_file > $json_file.tmp
-mv $json_file.tmp $json_file
+echo "--- Writing $pkg_file ---"
+sed -i -E \
+    -e "s|^  version = \".*\";\$|  version = \"$new_version\";|" \
+    -e "s|^  srcHash = \".*\";\$|  srcHash = \"$src_hash\";|" \
+    -e "s|^  vendorHash = \".*\";\$|  vendorHash = \"$vendor_hash\";|" \
+    $pkg_file
 
-echo "--- Updated $variant to v$new_version ---"
+echo "--- Updated to v$new_version ---"

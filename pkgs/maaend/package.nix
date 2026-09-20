@@ -10,23 +10,19 @@
   mxu-unwrapped,
   stdenvNoCC,
   wrapGAppsHook3,
-
-  isBeta ? false,
 }:
 
 let
-  versionInfo = lib.importJSON ./version.json;
-  variant = if isBeta then "beta" else "stable";
-  info = versionInfo.${variant};
-
   pname = "maaend";
-  inherit (info) version;
+  version = "2.19.0";
+  srcHash = "sha256-k5TrBIUnubu/2S2/X7Ndy/9C4kvNtpSGXyl4UnQCoKo=";
+  vendorHash = "sha256-pgL/rP28YN0q49yPyBN3DTvwn/xdcKF1BE74gBuyyrU=";
 
   src = fetchFromGitHub {
     owner = "MaaEnd";
     repo = "MaaEnd";
-    rev = "v${version}";
-    hash = info.srcHash;
+    tag = "v${version}";
+    hash = srcHash;
     fetchSubmodules = true;
   };
 
@@ -35,9 +31,9 @@ let
       pname
       version
       src
+      vendorHash
       meta
       ;
-    inherit (info) vendorHash;
   };
 
   cpp-algo = callPackage ./cpp-algo.nix {
