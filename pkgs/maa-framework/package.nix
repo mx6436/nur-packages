@@ -51,7 +51,6 @@ stdenv.mkDerivation (finalAttrs: {
 
   patches = [
     ./handle-EINTR.patch
-    ./picli-path-resolution.patch
   ];
 
   postPatch = ''
@@ -88,6 +87,7 @@ stdenv.mkDerivation (finalAttrs: {
     (lib.cmakeFeature "MAA_HASH_VERSION" finalAttrs.version)
     (lib.cmakeBool "WITH_KWIN_CONTROLLER" false) # build problem
     (lib.cmakeBool "WITH_RPATH_LIBRARY" false)
+    (lib.cmakeBool "BUILD_PICLI" false)
   ];
 
   meta = {
