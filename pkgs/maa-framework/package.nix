@@ -6,7 +6,6 @@
   dbus,
   fetchFromGitHub,
   lib,
-  libei,
   libffi,
   libsodium,
   onnxruntime,
@@ -19,6 +18,7 @@
 }:
 
 let
+  libei = callPackage ./libei.nix { };
   fastdeploy-ppocr = callPackage ./fastdeploy-ppocr.nix { };
 
   # upstream git submodules, pinned to the commits recorded in MaaFramework
