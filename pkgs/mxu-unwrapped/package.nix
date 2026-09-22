@@ -17,7 +17,7 @@
 
 rustPlatform.buildRustPackage (finalAttrs: {
   pname = "mxu-unwrapped";
-  version = "2.6.0";
+  version = "2.6.1";
 
   __structuredAttrs = true;
 
@@ -25,7 +25,7 @@ rustPlatform.buildRustPackage (finalAttrs: {
     owner = "MistEO";
     repo = "MXU";
     rev = "v${finalAttrs.version}";
-    hash = "sha256-Uj/0SojrEvPx26D4J7Ji93Ebfmt7Pyrtno+iPDKxhNY=";
+    hash = "sha256-LXwGCOoeHLmIVXHu0l9czR6RNpUpnRcS/uGX7k2cqmg=";
   };
 
   cargoHash = "sha256-uxL66urnN64iCU7BgbOrAUds9YSE+W4cnqeeGrkoCTc=";
@@ -42,8 +42,6 @@ rustPlatform.buildRustPackage (finalAttrs: {
   patches = [
     # Read app data dir from MXU_DATA_DIR / XDG_DATA_HOME / HOME.
     ./0001-data-dir.patch
-    # Allow plugin-fs access to MXU data directories.
-    ./0002-capability.patch
     # Disable auto update
     ./0003-disable-autoupdate.patch
   ];
