@@ -14,13 +14,13 @@
 
 let
   pname = "maaend";
-  version = "2.30.0-beta.5";
+  version = "2.30.0-rc.1";
 
   src = fetchFromGitHub {
     owner = "MaaEnd";
     repo = "MaaEnd";
     tag = "v${version}";
-    hash = "sha256-pvsHkLgRtYn+rLQUcI/7IyvV8Ep0sqQSEPzniR7p+0A=";
+    hash = "sha256-U4BrQLnKh3Gp3i50RAcjMk1lajx4P+ySba4dUfaO+sc=";
   };
 
   # submodules are fetched as separate tarballs instead of with fetchSubmodules
@@ -37,8 +37,8 @@ let
   maaendAi = fetchFromGitHub {
     owner = "MaaEnd";
     repo = "MaaEnd-AI";
-    rev = "258088b12c7dec94ccc8a377b1c989675d078638";
-    hash = "sha256-Q/1PSQlNYITn/aHG0WYbPmhnS5iULcyvlez3z6CYjQI=";
+    rev = "a5c4af8af0473701eb175d67c602e15da98c8370";
+    hash = "sha256-U6iw9SlYWDNcUa6a+TdG0gdsbCWeH+rKDBU7VXGh6DM=";
   };
 
   go-service = callPackage ./go-service.nix {
