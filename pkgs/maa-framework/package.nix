@@ -40,7 +40,7 @@ in
 
 stdenv.mkDerivation (finalAttrs: {
   pname = "maa-framework";
-  version = "5.14.0-beta.1";
+  version = "5.14.0";
 
   __structuredAttrs = true;
   strictDeps = true;
@@ -49,7 +49,7 @@ stdenv.mkDerivation (finalAttrs: {
     owner = "MaaXYZ";
     repo = "MaaFramework";
     tag = "v${finalAttrs.version}";
-    sha256 = "sha256-s4POqpXtIVGQ3qhlEvi0xDQN0s7J+ioh8kZDZamytRs=";
+    sha256 = "sha256-oKYBkLYyXAc4Y+Oiq1PpMxL+PaJ3Z6jv0K88pO7JoZ8=";
   };
 
   nativeBuildInputs = [
@@ -71,6 +71,8 @@ stdenv.mkDerivation (finalAttrs: {
     wayland
     zlib
   ];
+
+  passthru.updateScript = ./update.sh;
 
   # submodules
   postUnpack = ''
