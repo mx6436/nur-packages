@@ -14,13 +14,13 @@
 
 let
   pname = "maaend";
-  version = "2.30.0";
+  version = "2.30.1";
 
   src = fetchFromGitHub {
     owner = "MaaEnd";
     repo = "MaaEnd";
     tag = "v${version}";
-    hash = "sha256-UsVKGDwKAGkdZI/j2qhh6x9iIKbQXJmHKG0v0kBtk2s=";
+    hash = "sha256-Daxku6OEiRS6ApW0JUH0PvuGrfuM2aeJM6D7upW6yQA=";
   };
 
   # submodules are fetched as separate tarballs instead of with fetchSubmodules
