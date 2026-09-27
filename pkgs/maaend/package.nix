@@ -8,24 +8,23 @@
   maa-framework,
   makeDesktopItem,
   mxu-unwrapped,
+  nssTools,
   stdenvNoCC,
   wrapGAppsHook3,
 }:
 
 let
   pname = "maaend";
-  version = "2.30.1";
+  version = "2.31.0-beta.1";
 
   src = fetchFromGitHub {
     owner = "MaaEnd";
     repo = "MaaEnd";
     tag = "v${version}";
-    hash = "sha256-Daxku6OEiRS6ApW0JUH0PvuGrfuM2aeJM6D7upW6yQA=";
+    hash = "sha256-shv/hsTs2QUoCwE1rvnyJAvZHAj1fcsHRagxz7qL1Xg=";
   };
 
-  # submodules are fetched as separate tarballs instead of with fetchSubmodules
-
-  # agent/cpp-algo/MaaUtils
+  # agent/cpp-algo/MaaUtils submodule
   maaUtils = fetchFromGitHub {
     owner = "MaaXYZ";
     repo = "MaaUtils";
@@ -33,12 +32,12 @@ let
     hash = "sha256-g6FoqD3EBldHwgULILmxxR9rJajBP5fm6YJynUA8TFY=";
   };
 
-  # assets/resource/model
-  maaendAi = fetchFromGitHub {
+  # assets/resource/model submodule
+  maaendAI = fetchFromGitHub {
     owner = "MaaEnd";
     repo = "MaaEnd-AI";
-    rev = "abdef5503c8dcb3d6f250a3d1383729fbc6b48af";
-    hash = "sha256-ZgY/lPnmWlnhFEytsiWaPQEekV1Dv+Sfm94X6C7CzmQ=";
+    rev = "3178323b321a5853a929dd3c4b98896ec0eb4f45";
+    hash = "sha256-syNCvK+4UDUC8PZY+uym0fFX5dmI8UrLx0B5Vn8NFEk=";
   };
 
   go-service = callPackage ./go-service.nix {
@@ -59,6 +58,11 @@ let
       meta
       ;
   };
+
+  runtimeTools = [
+    android-tools
+    nssTools
+  ];
 
   meta = {
     description = "MAA Helper for Arknights: Endfield";
@@ -91,7 +95,7 @@ stdenvNoCC.mkDerivation (finalAttrs: {
   postPatch = ''
     # write version to interface.json
     substituteInPlace assets/interface.json \
-      --replace-fail "0.1.0" "${finalAttrs.version}"
+      --replace-fail '"version": "v0.1.0"' '"version": "v${finalAttrs.version}"'
   '';
 
   installPhase = ''
@@ -104,15 +108,15 @@ stdenvNoCC.mkDerivation (finalAttrs: {
     cp -r ${maa-framework}/share/MaaAgentBinary $out/lib/maafw/MaaAgentBinary
 
     cp ${mxu-unwrapped}/bin/mxu $out/lib/mxu
-    # This symlink will be wrapped by wrapGAppsHook3
-    ln -s $out/lib/mxu $out/bin/MaaEnd
+    ln -s $out/lib/mxu $out/bin/MaaEnd  # This symlink will be wrapped by wrapGAppsHook3
 
     cp ${go-service}/bin/go-service $out/lib/agent/go-service
     cp ${cpp-algo}/agent/cpp-algo $out/lib/agent/cpp-algo
     cp -r assets/. $out/lib
+
+    # assets/resource/model submodule
     rm -rf $out/lib/resource/model
-    # assets/resource/model
-    ln -s ${maaendAi} $out/lib/resource/model
+    ln -s ${maaendAI} $out/lib/resource/model
 
     cp README.md $out/lib/README.md
     cp LICENSE $out/lib/LICENSE
@@ -124,10 +128,9 @@ stdenvNoCC.mkDerivation (finalAttrs: {
   preFixup = ''
     gappsWrapperArgs+=(
       --prefix LD_LIBRARY_PATH : ${lib.makeLibraryPath [ libayatana-appindicator ]}
-      --prefix PATH : ${lib.makeBinPath [ android-tools ]}
+      --prefix PATH : ${lib.makeBinPath runtimeTools}
     )
 
-    # makeDesktopItem 引用不到本包的 $out，这里补成绝对路径。
     substituteInPlace $out/share/applications/maaend.desktop \
       --replace-fail "Exec=MaaEnd" "Exec=$out/bin/MaaEnd"
   '';
@@ -139,7 +142,6 @@ stdenvNoCC.mkDerivation (finalAttrs: {
       desktopName = "MaaEnd";
       comment = "MAA Helper for Arknights: Endfield";
       icon = "MaaEnd-Tiny";
-      # 实际 WM_CLASS 是 MaaEnd，与文件名大小写不一致。
       startupWMClass = "MaaEnd";
       exec = "MaaEnd";
       categories = [ "Utility" ];
