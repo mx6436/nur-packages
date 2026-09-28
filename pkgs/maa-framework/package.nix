@@ -40,7 +40,7 @@ in
 
 stdenv.mkDerivation (finalAttrs: {
   pname = "maa-framework";
-  version = "5.14.0";
+  version = "5.14.1";
 
   __structuredAttrs = true;
   strictDeps = true;
@@ -49,7 +49,7 @@ stdenv.mkDerivation (finalAttrs: {
     owner = "MaaXYZ";
     repo = "MaaFramework";
     tag = "v${finalAttrs.version}";
-    sha256 = "sha256-oKYBkLYyXAc4Y+Oiq1PpMxL+PaJ3Z6jv0K88pO7JoZ8=";
+    sha256 = "sha256-8KYSc64fRhvOZWNjQ0a4h1rqFsISr8tT4k2DaS1sIto=";
   };
 
   nativeBuildInputs = [
