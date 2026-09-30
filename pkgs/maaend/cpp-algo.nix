@@ -52,6 +52,11 @@ stdenv.mkDerivation (finalAttrs: {
   '';
 
   postPatch = ''
+    # Avoid GCC 15's false positive in aggregate initialization cleanup.
+    substituteInPlace agent/cpp-algo/source/MapNavigator/navigation_runtime_state.h \
+      --replace-fail $'struct NavigationRuntimeState\n{' \
+        $'struct NavigationRuntimeState\n{\n    NavigationRuntimeState() = default;'
+
     # Build against Nix-provided dependencies instead of MaaDeps.
     substituteInPlace agent/cpp-algo/MaaUtils/MaaUtils.cmake \
       --replace-fail 'include(''${MAADEPS_DIR}/maadeps.cmake)' "" \
