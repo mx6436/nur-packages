@@ -4,8 +4,8 @@
 #
 # Tracks the newest published release, pre-releases included (v1.2.3-rc.1, ...).
 #
-# Requires: fish, curl, jq, git, gnused, nix (with nix-prefetch-url) in PATH,
-# and a nixpkgs checkout reachable through NIX_PATH (for the vendorHash probe).
+# Requires: fish, curl, jq, git, gnused, nix (with nix-prefetch-url) in PATH.
+# The vendorHash probe uses the repository's locked nixpkgs.
 # When run outside of such an environment, e.g. in CI, use:
 #   nix shell nixpkgs#fish nixpkgs#nix nixpkgs#jq nixpkgs#curl nixpkgs#gnused nixpkgs#git \
 #     --command fish pkgs/maaend/update.fish
@@ -24,7 +24,7 @@ set go_service_file pkgs/maaend/go-service.nix
 # submodules fetched as tarballs: <path> <GitHub repo> <nix binding name>
 set submodules \
     "agent/cpp-algo/MaaUtils MaaXYZ/MaaUtils maaUtils" \
-    "assets/resource/model MaaEnd/MaaEnd-AI maaendAi"
+    "assets/resource/model MaaEnd/MaaEnd-AI maaendAI"
 
 # test fixtures only, not packaged
 set ignored_submodules tests/MaaEndTestset
@@ -95,11 +95,10 @@ if test -z "$current_version"
     exit 1
 end
 if test "$current_version" = "$new_version"
-    echo "Already up to date: v$new_version"
-    exit 0
+    echo "Version unchanged: v$new_version; checking hashes"
+else
+    echo "Updating: $current_version -> $new_version"
 end
-
-echo "Updating: $current_version -> $new_version"
 
 set tmpdir (mktemp -d)
 
@@ -169,33 +168,35 @@ end
 
 echo "--- Computing vendorHash ---"
 set temp_nix $tmpdir/vendor-fetch.nix
+set repo_root (pwd -P)
 echo '
-{
-  buildGoModule,
-  fetchFromGitHub,
-  lib,
-}:
-buildGoModule {
-  pname = "maaend-go-service";
-  version = "'"$new_version"'";
-  src = fetchFromGitHub {
-    owner = "MaaEnd";
-    repo = "MaaEnd";
-    rev = "'"$tag_name"'";
-    hash = "'"$src_hash"'";
+let
+  flake = builtins.getFlake "'"$repo_root"'";
+  pkgs = import flake.inputs.nixpkgs { system = builtins.currentSystem; };
+  goService = pkgs.callPackage '"$repo_root/$go_service_file"' {
+    pname = "maaend";
+    version = "'"$new_version"'";
+    src = pkgs.fetchFromGitHub {
+      owner = "MaaEnd";
+      repo = "MaaEnd";
+      tag = "'"$tag_name"'";
+      hash = "'"$src_hash"'";
+    };
+    meta = {};
   };
-  vendorHash = lib.fakeHash;
-  modRoot = "agent/go-service";
-  subPackages = [ "." ];
-}
+in
+(goService.overrideAttrs { vendorHash = pkgs.lib.fakeHash; }).goModules
 ' > $temp_nix
 
-set build_output (nix build --impure --expr "(import $temp_nix { inherit (import <nixpkgs> {}) buildGoModule fetchFromGitHub lib; })" --no-link 2>&1; or true)
-set vendor_hash (echo "$build_output" | string match -rg 'got:\s+(sha256-\S+)')
+set build_output (nix build --impure --file $temp_nix --no-link 2>&1)
+set build_status $status
+# Only accept the expected fake-hash mismatch from the Go modules derivation.
+set build_log (string join \n -- $build_output | string collect)
+set vendor_hash (string match -rg "(?s)hash mismatch in fixed-output derivation '[^'\n]*-go-modules\\.drv':\\s+specified:\\s+sha256-A{43}=\\s+got:\\s+(sha256-[A-Za-z0-9+/]{43}=)" -- "$build_log")
 
-if test -z "$vendor_hash"
+if test $build_status -eq 0; or test (count $vendor_hash) -ne 1
     echo "ERROR: Failed to extract vendorHash from build output"
-    echo "$build_output"
+    printf '%s\n' $build_output
     exit 1
 end
 

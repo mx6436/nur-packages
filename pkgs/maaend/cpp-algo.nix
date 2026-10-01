@@ -70,7 +70,6 @@ stdenv.mkDerivation (finalAttrs: {
 
     # Resolve framework paths from the packaged maa-framework output.
     substituteInPlace agent/cpp-algo/CMakeLists.txt \
-      --replace-fail 'DEPS_DIR ''${CMAKE_CURRENT_SOURCE_DIR}/../../deps' 'DEPS_DIR ${maa-framework}' \
       --replace-fail "RelWithDebInfo" "Release"
 
     # MaaUtils is provided by maa-framework, not this build tree.
@@ -81,6 +80,7 @@ stdenv.mkDerivation (finalAttrs: {
   '';
 
   cmakeFlags = [
+    (lib.cmakeFeature "DEPS_DIR" "${maa-framework}")
     (lib.cmakeBool "BUILD_MAA_UTILS" false)
     (lib.cmakeBool "WITH_RPATH_LIBRARY" false)
   ];
