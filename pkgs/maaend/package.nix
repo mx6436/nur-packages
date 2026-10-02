@@ -71,6 +71,7 @@ let
     license = lib.licenses.agpl3Only;
     mainProgram = "MaaEnd";
     platforms = lib.platforms.linux;
+    broken = true;
   };
 in
 
