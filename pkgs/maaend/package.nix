@@ -3,6 +3,7 @@
   callPackage,
   copyDesktopItems,
   fetchFromGitHub,
+  glib-networking,
   lib,
   libayatana-appindicator,
   maa-framework,
@@ -87,6 +88,10 @@ stdenvNoCC.mkDerivation (finalAttrs: {
   strictDeps = true;
 
   passthru.updateScript = ./update.fish;
+
+  buildInputs = [
+    glib-networking
+  ];
 
   nativeBuildInputs = [
     copyDesktopItems
