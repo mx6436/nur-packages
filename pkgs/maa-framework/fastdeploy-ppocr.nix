@@ -25,8 +25,8 @@ effectiveStdenv.mkDerivation (finalAttrs: {
     owner = "MaaXYZ";
     repo = "FastDeploy";
     # follows https://github.com/MaaXYZ/MaaDeps/blob/master/vcpkg-overlay/ports/maa-fastdeploy/portfile.cmake#L4
-    rev = "e962983da6daba7d0c12f6bf5f8ff7173be70982";
-    hash = "sha256-T20WhXE1toEgeXbMlQn9EnLXoz5vepUca4p7C2tQK44=";
+    rev = "e11935e4595360e7038573db1a7ab08dd0e096ec";
+    hash = "sha256-7g0T5TZ2M2I12nIq9Cytbi8qGw60ssxAgYr2o1pAUVU=";
   };
 
   postPatch = ''

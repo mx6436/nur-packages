@@ -5,7 +5,7 @@
   maaUtils,
   meta,
 
-  boost187,
+  boost188,
   cmake,
   lib,
   maa-framework,
@@ -33,7 +33,7 @@ stdenv.mkDerivation (finalAttrs: {
   ];
 
   buildInputs = [
-    boost187
+    boost188
     maa-framework
     onnxruntime
     opencv

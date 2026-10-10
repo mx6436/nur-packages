@@ -1,5 +1,5 @@
 {
-  boost187,
+  boost188,
   callPackage,
   cmake,
   cppzmq,
@@ -25,8 +25,8 @@ let
   MaaUtils = fetchFromGitHub {
     owner = "MaaXYZ";
     repo = "MaaUtils";
-    rev = "6e9ba33f6ad835418097d9324c01c44a82825a2b";
-    hash = "sha256-g6FoqD3EBldHwgULILmxxR9rJajBP5fm6YJynUA8TFY=";
+    rev = "f8994a38ddc6858800dfea8a04e958a0adbfb184";
+    hash = "sha256-OE5XW+1wm6rMHcWbaXrPxMpUe0AZWt0BZYZBxAR/T38=";
   };
 
   # runtime agent binaries, installed to $out/share/MaaAgentBinary
@@ -40,7 +40,7 @@ in
 
 stdenv.mkDerivation (finalAttrs: {
   pname = "maa-framework";
-  version = "5.14.2";
+  version = "5.14.3";
 
   __structuredAttrs = true;
   strictDeps = true;
@@ -49,7 +49,7 @@ stdenv.mkDerivation (finalAttrs: {
     owner = "MaaXYZ";
     repo = "MaaFramework";
     tag = "v${finalAttrs.version}";
-    sha256 = "sha256-LTX0O1VGdJYwUa5iNZYNoLw3aYtPtWuWGD1PoRrHGlw=";
+    sha256 = "sha256-Txn3d/QtV510vMjwV0D7Kn7Qa1IGWIbw/1TR5+u1yz8=";
   };
 
   nativeBuildInputs = [
@@ -58,7 +58,7 @@ stdenv.mkDerivation (finalAttrs: {
   ];
 
   buildInputs = [
-    boost187 # 1.87.0 is the last version compatible
+    boost188
     cppzmq
     dbus
     fastdeploy-ppocr
