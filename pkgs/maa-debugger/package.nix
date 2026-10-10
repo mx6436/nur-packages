@@ -6,7 +6,7 @@
   buildGoModule,
   makeWrapper,
   nodejs,
-  pnpm_10,
+  pnpm_12,
   pnpmConfigHook,
   maa-framework,
 }:
@@ -14,6 +14,8 @@
 let
   pname = "maa-debugger";
   version = "unstable-2026-04-24";
+
+  pnpm = pnpm_12;
 
   src = fetchFromGitHub {
     owner = "MaaXYZ";
@@ -32,9 +34,9 @@ let
 
     pnpmDeps = fetchPnpmDeps {
       inherit pname version src;
-      fetcherVersion = 3;
-      pnpm = pnpm_10;
-      hash = "sha256-QWswAlGvEgPtNeCwhiGZ2YIrn1TMWQi40nt8QV5IXiQ=";
+      fetcherVersion = 4;
+      inherit pnpm;
+      hash = "sha256-vze8HgDaIL5AkacmjdqVrqluE2KN5/2afo6E5kq2SRs=";
       sourceRoot = "${src.name}/web";
     };
 
@@ -42,7 +44,7 @@ let
 
     nativeBuildInputs = [
       nodejs
-      pnpm_10
+      pnpm
       pnpmConfigHook
     ];
 
