@@ -5,7 +5,7 @@
 
   cargo-tauri,
   nodejs,
-  pnpm_10,
+  pnpm_12,
   pnpmConfigHook,
   pkg-config,
   rustPlatform,
@@ -14,6 +14,10 @@
   openssl,
   webkitgtk_4_1,
 }:
+
+let
+  pnpm = pnpm_12;
+in
 
 rustPlatform.buildRustPackage (finalAttrs: {
   pname = "mxu-unwrapped";
@@ -34,9 +38,9 @@ rustPlatform.buildRustPackage (finalAttrs: {
 
   pnpmDeps = fetchPnpmDeps {
     inherit (finalAttrs) pname version src;
-    fetcherVersion = 3;
-    pnpm = pnpm_10;
-    hash = "sha256-Lt2fRAhEO4nmBmNG6TqBURRLfvLghhVIokVsqbL9Ufg=";
+    fetcherVersion = 4;
+    inherit pnpm;
+    hash = "sha256-10BoOsAK0EbQsaYauM7MpkGvdh3CBRP3qFfJFlkzw7M=";
   };
 
   patches = [
@@ -59,7 +63,7 @@ rustPlatform.buildRustPackage (finalAttrs: {
     cargo-tauri.hook
     nodejs
     pkg-config
-    pnpm_10
+    pnpm
     pnpmConfigHook
   ];
 
