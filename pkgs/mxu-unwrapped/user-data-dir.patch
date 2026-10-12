@@ -1,0 +1,289 @@
+diff --git a/src-tauri/src/commands/file_ops.rs b/src-tauri/src/commands/file_ops.rs
+index 305775b..6570bbd 100644
+--- a/src-tauri/src/commands/file_ops.rs
++++ b/src-tauri/src/commands/file_ops.rs
+@@ -293,7 +293,8 @@ pub fn get_exe_dir() -> Result<String, String> {
+ 
+ /// 获取应用数据目录路径
+ /// - macOS: ~/Library/Application Support/MXU/
+-/// - Windows/Linux: exe 所在目录
++/// - Linux: $XDG_DATA_HOME/{项目名}，默认 ~/.local/share/{项目名}
++/// - Windows: exe 所在目录
+ #[tauri::command]
+ pub fn get_data_dir() -> Result<String, String> {
+     let data_dir = get_app_data_dir()?;
+diff --git a/src-tauri/src/commands/maa_agent.rs b/src-tauri/src/commands/maa_agent.rs
+index d276381..eda4959 100644
+--- a/src-tauri/src/commands/maa_agent.rs
++++ b/src-tauri/src/commands/maa_agent.rs
+@@ -625,13 +625,28 @@ pub async fn start_tasks_impl(
+ 
+     // 启动所有 Agent（如果配置了）
+     debug!("[start_tasks] Checking agent configs...");
+-    let pi_envs = Arc::new(pi_envs.unwrap_or_default());
+     if let Some(configs) = agent_configs {
+         if configs.is_empty() {
+             debug!("[start_tasks] Agent configs list is empty, skipping agent setup");
+         } else {
+             info!("[start_tasks] Starting {} agent(s)...", configs.len());
+ 
++            // PI v2.11.0: 使用后端实际数据目录，不随资源目录或客户端传值变化。
++            let data_dir = super::utils::get_app_data_dir()?;
++            let data_dir = if data_dir.is_absolute() {
++                data_dir
++            } else {
++                std::env::current_dir()
++                    .map_err(|e| e.to_string())?
++                    .join(data_dir)
++            };
++            let mut pi_envs = pi_envs.unwrap_or_default();
++            pi_envs.insert(
++                "PI_USER_DATA_DIR".to_string(),
++                data_dir.to_string_lossy().to_string(),
++            );
++            let pi_envs = Arc::new(pi_envs);
++
+             // 用于收集所有成功启动的 agent，失败时需要回滚清理
+             let mut new_clients = Vec::new();
+             let mut new_children = Vec::new();
+diff --git a/src-tauri/src/commands/utils.rs b/src-tauri/src/commands/utils.rs
+index 84e0ab2..926ba9e 100644
+--- a/src-tauri/src/commands/utils.rs
++++ b/src-tauri/src/commands/utils.rs
+@@ -169,7 +169,8 @@ pub fn emit_config_changed(app: &AppHandle) {
+ 
+ /// 获取应用数据目录
+ /// - macOS: ~/Library/Application Support/MXU/
+-/// - Windows/Linux: exe 所在目录（保持便携式部署）
++/// - Linux: $XDG_DATA_HOME/{项目名}，默认 ~/.local/share/{项目名}
++/// - Windows: exe 所在目录（保持便携式部署）
+ pub fn get_app_data_dir() -> Result<PathBuf, String> {
+     #[cfg(target_os = "macos")]
+     {
+@@ -181,13 +182,63 @@ pub fn get_app_data_dir() -> Result<PathBuf, String> {
+         Ok(path)
+     }
+ 
+-    #[cfg(not(target_os = "macos"))]
++    #[cfg(target_os = "linux")]
++    {
++        let interface_path = get_exe_directory()?.join("interface.json");
++        let content = match std::fs::read_to_string(&interface_path) {
++            Ok(content) => Some(content),
++            Err(e) if e.kind() == std::io::ErrorKind::NotFound => None,
++            Err(e) => return Err(format!("读取 interface.json 失败: {}", e)),
++        };
++        let xdg_data_home = std::env::var_os("XDG_DATA_HOME").map(PathBuf::from);
++        let home = std::env::var_os("HOME").map(PathBuf::from);
++        linux_data_dir(content.as_deref(), xdg_data_home.as_deref(), home.as_deref())
++    }
++
++    #[cfg(not(any(target_os = "macos", target_os = "linux")))]
+     {
+-        // Windows/Linux 保持便携式，使用 exe 所在目录
+         get_exe_directory()
+     }
+ }
+ 
++#[cfg(target_os = "linux")]
++fn linux_data_dir(
++    interface_content: Option<&str>,
++    xdg_data_home: Option<&std::path::Path>,
++    home: Option<&std::path::Path>,
++) -> Result<PathBuf, String> {
++    use std::path::{Component, Path};
++
++    let interface = interface_content
++        .map(super::app_config::parse_jsonc)
++        .transpose()
++        .map_err(|e| format!("解析 interface.json 失败: {}", e))?;
++    let project_name = interface
++        .as_ref()
++        .and_then(|value| value.get("name"))
++        .and_then(|value| value.as_str())
++        .unwrap_or("MXU");
++    // 项目名必须是单个目录名，避免绝对路径或 .. 逃逸数据目录。
++    let mut components = Path::new(project_name).components();
++    if project_name.is_empty()
++        || project_name.contains('/')
++        || !matches!(components.next(), Some(Component::Normal(_)))
++        || components.next().is_some()
++    {
++        return Err("interface.json 的项目名不是有效的目录名".to_string());
++    }
++
++    let base = match xdg_data_home.filter(|path| path.is_absolute()) {
++        Some(path) => path.to_path_buf(),
++        None => home
++            .filter(|path| path.is_absolute())
++            .ok_or_else(|| "无法获取有效的 HOME 环境变量".to_string())?
++            .join(".local")
++            .join("share"),
++    };
++    Ok(base.join(project_name))
++}
++
+ /// 规范化路径：移除冗余的 `.`、处理 `..`、统一分隔符
+ /// 使用 Path::components() 解析，不需要路径实际存在
+ pub fn normalize_path(path: &str) -> PathBuf {
+@@ -304,3 +355,68 @@ pub fn build_launch_command(
+ 
+     cmd
+ }
++
++#[cfg(all(test, target_os = "linux"))]
++mod tests {
++    use super::linux_data_dir;
++    use std::path::{Path, PathBuf};
++
++    const INTERFACE: &str = r#"{"name": "MaaEnd"}"#;
++
++    #[test]
++    fn linux_data_dir_uses_xdg_home() {
++        assert_eq!(
++            linux_data_dir(Some(INTERFACE), Some(Path::new("/data")), None).unwrap(),
++            PathBuf::from("/data/MaaEnd")
++        );
++    }
++
++    #[test]
++    fn linux_data_dir_defaults_to_local_share() {
++        for xdg in [None, Some(Path::new("")), Some(Path::new("relative"))] {
++            assert_eq!(
++                linux_data_dir(Some(INTERFACE), xdg, Some(Path::new("/home/user"))).unwrap(),
++                PathBuf::from("/home/user/.local/share/MaaEnd")
++            );
++        }
++    }
++
++    #[test]
++    fn linux_data_dir_supports_jsonc() {
++        assert_eq!(
++            linux_data_dir(
++                Some("{ // project\n\"name\": \"MaaEnd\" }"),
++                Some(Path::new("/data")),
++                None,
++            )
++            .unwrap(),
++            PathBuf::from("/data/MaaEnd")
++        );
++    }
++
++    #[test]
++    fn linux_data_dir_defaults_to_mxu_without_project_name() {
++        for content in [None, Some("{}")] {
++            assert_eq!(
++                linux_data_dir(content, Some(Path::new("/data")), None).unwrap(),
++                PathBuf::from("/data/MXU")
++            );
++        }
++    }
++
++    #[test]
++    fn linux_data_dir_rejects_invalid_project_names() {
++        for name in ["", ".", "..", "../MaaEnd", "/tmp/MaaEnd", "a/b", "MaaEnd/"] {
++            let content = serde_json::json!({ "name": name }).to_string();
++            assert!(linux_data_dir(Some(&content), Some(Path::new("/data")), None).is_err());
++        }
++    }
++
++    #[test]
++    fn linux_data_dir_requires_valid_home_without_xdg() {
++        for home in [None, Some(Path::new("")), Some(Path::new("relative"))] {
++            assert!(linux_data_dir(Some(INTERFACE), None, home).is_err());
++        }
++        assert!(linux_data_dir(Some("invalid json"), Some(Path::new("/data")), None).is_err());
++    }
++}
+diff --git a/src-tauri/tauri.linux.conf.json b/src-tauri/tauri.linux.conf.json
+index 58b09d3..4d2d379 100644
+--- a/src-tauri/tauri.linux.conf.json
++++ b/src-tauri/tauri.linux.conf.json
+@@ -3,6 +3,9 @@
+   "plugins": {
+     "fs": {
+       "requireLiteralLeadingDot": false
++    },
++    "opener": {
++      "requireLiteralLeadingDot": false
+     }
+   }
+ }
+diff --git a/src/services/interfaceLoader.ts b/src/services/interfaceLoader.ts
+index aa3744c..fea095d 100644
+--- a/src/services/interfaceLoader.ts
++++ b/src/services/interfaceLoader.ts
+@@ -39,7 +39,7 @@ export interface LoadResult {
+   interface: ProjectInterface;
+   translations: Record<string, Record<string, string>>;
+   basePath: string;
+-  dataPath: string; // 数据目录（macOS: ~/Library/Application Support/MXU/，其他平台同 basePath）
++  dataPath: string; // 数据目录（Linux: $XDG_DATA_HOME/{项目名}，macOS: ~/Library/Application Support/MXU/，Windows 同 basePath）
+   webServerPort?: number; // 后端 Web 服务器实际监听端口（浏览器模式下用于 WS 直连）
+   backendOS?: string; // 后端真实 OS（用于控制器过滤、更新匹配等；Tauri/HTTP 路径填充，dev 预览为空）
+   backendArch?: string; // 后端真实架构
+@@ -445,7 +445,7 @@ export async function autoLoadInterface(): Promise<LoadResult> {
+     const basePath = relativeBasePath ? `${exeDir}/${relativeBasePath}` : exeDir;
+     log.info('basePath (绝对路径):', basePath);
+ 
+-    // 获取数据目录（macOS 使用 Application Support，其他平台同 basePath）
++    // 获取数据目录（Linux 使用 XDG，macOS 使用 Application Support，Windows 同 basePath）
+     const dataPath = await getDataDir();
+     log.info('dataPath (数据目录):', dataPath);
+ 
+diff --git a/src/services/updateService.ts b/src/services/updateService.ts
+index b98f555..0657dbb 100644
+--- a/src/services/updateService.ts
++++ b/src/services/updateService.ts
+@@ -929,8 +929,8 @@ export async function checkAndPrepareDownload(
+ 
+ /**
+  * 获取更新包保存路径
+- * @param dataPath 数据目录（macOS: ~/Library/Application
+- *     Support/MXU/，其他平台: exe 目录）
++ * 使用应用数据目录（Linux: $XDG_DATA_HOME/{项目名}，
++ * macOS: ~/Library/Application Support/MXU/，Windows: exe 目录）。
+  * @param filename 文件名（可选）。如果不提供，使用默认名称。
+  *                 注意：实际保存路径可能由 Rust 下载时从 302 重定向或
+  * Content-Disposition 检测后覆盖
+diff --git a/src/stores/types.ts b/src/stores/types.ts
+index 6ba8cf3..fad6f2b 100644
+--- a/src/stores/types.ts
++++ b/src/stores/types.ts
+@@ -148,7 +148,7 @@ export interface AppState {
+   projectInterface: ProjectInterface | null;
+   interfaceTranslations: Record<string, Record<string, string>>;
+   basePath: string; // exe 所在目录（资源路径）
+-  dataPath: string; // 数据目录（macOS: ~/Library/Application Support/MXU/，其他平台同 basePath）
++  dataPath: string; // 数据目录（Linux: $XDG_DATA_HOME/{项目名}，macOS: ~/Library/Application Support/MXU/，Windows 同 basePath）
+   setProjectInterface: (pi: ProjectInterface) => void;
+   setInterfaceTranslations: (lang: string, translations: Record<string, string>) => void;
+   setBasePath: (path: string) => void;
+diff --git a/src/utils/paths.ts b/src/utils/paths.ts
+index 1cfd701..f60f2a5 100644
+--- a/src/utils/paths.ts
++++ b/src/utils/paths.ts
+@@ -19,7 +19,8 @@ let cachedDataPath: string | null = null;
+ /**
+  * 获取应用数据目录
+  * - macOS: ~/Library/Application Support/MXU/
+- * - Windows/Linux: exe 所在目录
++ * - Linux: $XDG_DATA_HOME/{项目名}，默认 ~/.local/share/{项目名}
++ * - Windows: exe 所在目录
+  *
+  * 结果会被缓存，多次调用不会重复请求
+  */
+diff --git a/src/utils/piEnv.ts b/src/utils/piEnv.ts
+index 7fb7ad3..bec6ab8 100644
+--- a/src/utils/piEnv.ts
++++ b/src/utils/piEnv.ts
+@@ -60,7 +60,8 @@ export function buildPiEnvVars(context: PiEnvContext): Record<string, string> {
+ 
+   const envs: Record<string, string> = {};
+ 
+-  envs.PI_INTERFACE_VERSION = 'v2.10.1';
++  // TODO: 补齐 PI v2.10.2 welcome 数组支持
++  envs.PI_INTERFACE_VERSION = 'v2.11.0';
+   envs.PI_CLIENT_NAME = 'MXU';
+   envs.PI_CLIENT_VERSION = typeof __MXU_VERSION__ !== 'undefined' ? __MXU_VERSION__ : 'unknown';
+   envs.PI_CLIENT_LANGUAGE = getInterfaceLangKey(language);

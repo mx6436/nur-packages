@@ -44,10 +44,8 @@ rustPlatform.buildRustPackage (finalAttrs: {
   };
 
   patches = [
-    # Read app data dir from MXU_DATA_DIR / XDG_DATA_HOME / HOME.
-    ./0001-data-dir.patch
-    # Disable auto update
-    ./0003-disable-autoupdate.patch
+    ./user-data-dir.patch
+    ./disable-autoupdate.patch
   ];
 
   # write version to config files, as what they should be
