@@ -1,0 +1,281 @@
+diff --git a/agent/cpp-algo/source/Common/output_paths.h b/agent/cpp-algo/source/Common/output_paths.h
+index 9ad8513f..e71a5d49 100644
+--- a/agent/cpp-algo/source/Common/output_paths.h
++++ b/agent/cpp-algo/source/Common/output_paths.h
+@@ -1,6 +1,11 @@
+ #pragma once
+ 
++#include <cstdlib>
+ #include <filesystem>
++#include <memory>
++#include <stdexcept>
++
++#include <MaaUtils/Platform.h>
+ 
+ namespace common
+ {
+@@ -13,10 +18,35 @@ inline const std::filesystem::path& StartupDir()
+     return startup_dir;
+ }
+ 
+-// Resolve persistent output against the startup directory, not the executable.
++// Resolve the shared user data directory once, before initializing persistent output.
++// Older Clients do not inject PI_USER_DATA_DIR; retain the portable layout for them.
++inline const std::filesystem::path& UserDataDir()
++{
++    static const std::filesystem::path user_data_dir = [] {
++#ifdef _WIN32
++        wchar_t* buffer = nullptr;
++        size_t size = 0;
++        if (_wdupenv_s(&buffer, &size, L"PI_USER_DATA_DIR") != 0) {
++            throw std::runtime_error("Failed to read PI_USER_DATA_DIR");
++        }
++        const std::unique_ptr<wchar_t, decltype(&std::free)> value(buffer, &std::free);
++        const auto dir = buffer && *buffer ? std::filesystem::path(buffer) : StartupDir();
++#else
++        const char* value = std::getenv("PI_USER_DATA_DIR");
++        const auto dir = value && *value ? MAA_NS::path(value) : StartupDir();
++#endif
++        if (!dir.is_absolute()) {
++            throw std::runtime_error("PI_USER_DATA_DIR must be an absolute path");
++        }
++        return dir.lexically_normal();
++    }();
++    return user_data_dir;
++}
++
++// Resolve persistent output against the shared user data directory, not resources.
+ inline std::filesystem::path OutputPath(const std::filesystem::path& relative_path = {})
+ {
+-    return relative_path.empty() ? StartupDir() : StartupDir() / relative_path;
++    return relative_path.empty() ? UserDataDir() : UserDataDir() / relative_path;
+ }
+ 
+ } // namespace common
+diff --git a/agent/cpp-algo/source/main.cpp b/agent/cpp-algo/source/main.cpp
+index 5bd2cf0c..9cd122b1 100644
+--- a/agent/cpp-algo/source/main.cpp
++++ b/agent/cpp-algo/source/main.cpp
+@@ -35,7 +35,7 @@ bool initialize_logging()
+ {
+     bool logging = true;
+     MaaLoggingLevel stdout_level = MaaLoggingLevel_Error;
+-    const auto config_path = MAA_NS::path("./config/maa_option.json");
++    const auto config_path = common::OutputPath(MAA_NS::path("config/maa_option.json"));
+     std::error_code ec;
+     const bool config_exists = std::filesystem::exists(config_path, ec);
+     if (ec) {
+@@ -87,9 +87,10 @@ int main(int argc, char** argv)
+ {
+     try {
+         common::StartupDir();
++        common::UserDataDir();
+     }
+-    catch (const std::filesystem::filesystem_error& error) {
+-        std::cerr << "Failed to capture startup working directory: " << error.what() << std::endl;
++    catch (const std::exception& error) {
++        std::cerr << "Failed to resolve startup directories: " << error.what() << std::endl;
+         return -1;
+     }
+ 
+diff --git a/agent/go-service/agent.go b/agent/go-service/agent.go
+index 60c51fb7..ab03cf29 100644
+--- a/agent/go-service/agent.go
++++ b/agent/go-service/agent.go
+@@ -4,6 +4,7 @@ import (
+ 	"os"
+ 	"path/filepath"
+ 
++	"github.com/MaaXYZ/MaaEnd/agent/go-service/pkg/fsutil"
+ 	"github.com/MaaXYZ/maa-framework-go/v4"
+ 	"github.com/bytedance/sonic"
+ 	"github.com/rs/zerolog/log"
+@@ -38,7 +39,7 @@ func runAgent(identifier string) {
+ 	log.Info().
+ 		Msg("MAA framework initialized")
+ 
+-	userPath := getCwd()
++	userPath := fsutil.OutputPath()
+ 	if err := maa.ConfigInitOption(userPath, "{}"); err != nil {
+ 		log.Warn().
+ 			Str("userPath", userPath).
+diff --git a/agent/go-service/main.go b/agent/go-service/main.go
+index 54b03341..7898c264 100644
+--- a/agent/go-service/main.go
++++ b/agent/go-service/main.go
+@@ -25,6 +25,10 @@ func main() {
+ 		log.Fatal().Err(err).Msg("Failed to capture startup working directory")
+ 	}
+ 
++	if _, err := fsutil.UserDataDir(); err != nil {
++		log.Fatal().Err(err).Msg("Failed to resolve user data directory")
++	}
++
+ 	logFile, err := initLogger()
+ 	if err != nil {
+ 		log.Fatal().
+@@ -86,5 +90,9 @@ func main() {
+ }
+ 
+ func getCwd() string {
+-	return fsutil.OutputPath()
++	dir, err := fsutil.StartupDir()
++	if err != nil {
++		panic(err)
++	}
++	return dir
+ }
+diff --git a/agent/go-service/pkg/fsutil/paths.go b/agent/go-service/pkg/fsutil/paths.go
+index 58fb762b..99343d57 100644
+--- a/agent/go-service/pkg/fsutil/paths.go
++++ b/agent/go-service/pkg/fsutil/paths.go
+@@ -1,11 +1,25 @@
+ package fsutil
+ 
+ import (
++	"fmt"
+ 	"os"
+ 	"path/filepath"
++
++	"github.com/MaaXYZ/MaaEnd/agent/go-service/pkg/pienv"
+ )
+ 
+ var startupDir, startupDirErr = os.Getwd()
++var userDataDir, userDataDirErr = resolveUserDataDir(os.Getenv(pienv.EnvUserDataDir))
++
++func resolveUserDataDir(dir string) (string, error) {
++	if dir == "" {
++		return startupDir, startupDirErr
++	}
++	if !filepath.IsAbs(dir) {
++		return "", fmt.Errorf("%s must be an absolute path: %q", pienv.EnvUserDataDir, dir)
++	}
++	return filepath.Clean(dir), nil
++}
+ 
+ // StartupDir returns the working directory captured during process startup.
+ // An error means output paths cannot be resolved and startup must be aborted.
+@@ -13,11 +27,17 @@ func StartupDir() (string, error) {
+ 	return startupDir, startupDirErr
+ }
+ 
+-// OutputPath joins relative path components under the startup working directory.
+-// Callers must check StartupDir's error before using output paths.
++// UserDataDir returns the shared user data directory, falling back to StartupDir
++// when PI_USER_DATA_DIR is absent. Callers must check its error during startup.
++func UserDataDir() (string, error) {
++	return userDataDir, userDataDirErr
++}
++
++// OutputPath joins relative path components under the shared user data directory.
++// Callers must check UserDataDir's error before using output paths.
+ func OutputPath(parts ...string) string {
+-	if startupDirErr != nil {
+-		panic(startupDirErr)
++	if userDataDirErr != nil {
++		panic(userDataDirErr)
+ 	}
+-	return filepath.Join(append([]string{startupDir}, parts...)...)
++	return filepath.Join(append([]string{userDataDir}, parts...)...)
+ }
+diff --git a/agent/go-service/pkg/pienv/pienv.go b/agent/go-service/pkg/pienv/pienv.go
+index bf676d5b..ae558239 100644
+--- a/agent/go-service/pkg/pienv/pienv.go
++++ b/agent/go-service/pkg/pienv/pienv.go
+@@ -8,7 +8,7 @@ import (
+ 	"github.com/rs/zerolog/log"
+ )
+ 
+-// PI v2.5.0 environment variable keys.
++// PI v2.11.0 environment variable keys.
+ const (
+ 	EnvInterfaceVersion   = "PI_INTERFACE_VERSION"
+ 	EnvClientName         = "PI_CLIENT_NAME"
+@@ -16,6 +16,7 @@ const (
+ 	EnvClientLanguage     = "PI_CLIENT_LANGUAGE"
+ 	EnvClientMaaFWVersion = "PI_CLIENT_MAAFW_VERSION"
+ 	EnvVersion            = "PI_VERSION"
++	EnvUserDataDir        = "PI_USER_DATA_DIR"
+ 	EnvController         = "PI_CONTROLLER"
+ 	EnvResource           = "PI_RESOURCE"
+ )
+@@ -94,7 +95,7 @@ type Resource struct {
+ 	Option      []string `json:"option,omitempty"`
+ }
+ 
+-// Env holds all parsed PI_* environment variables (PI v2.5.0).
++// Env holds all parsed PI_* environment variables (PI v2.11.0).
+ type Env struct {
+ 	InterfaceVersion   string
+ 	ClientName         string
+@@ -102,6 +103,7 @@ type Env struct {
+ 	ClientLanguage     string
+ 	ClientMaaFWVersion string
+ 	Version            string
++	UserDataDir        string
+ 
+ 	Controller    *Controller
+ 	ControllerRaw string
+@@ -122,6 +124,7 @@ func doInit() {
+ 		ClientLanguage:     os.Getenv(EnvClientLanguage),
+ 		ClientMaaFWVersion: os.Getenv(EnvClientMaaFWVersion),
+ 		Version:            os.Getenv(EnvVersion),
++		UserDataDir:        os.Getenv(EnvUserDataDir),
+ 		ControllerRaw:      os.Getenv(EnvController),
+ 		ResourceRaw:        os.Getenv(EnvResource),
+ 	}
+@@ -160,6 +163,7 @@ func doInit() {
+ 		Str("client_language", env.ClientLanguage).
+ 		Str("client_maafw_version", env.ClientMaaFWVersion).
+ 		Str("pi_version", env.Version).
++		Str("user_data_dir", env.UserDataDir).
+ 		Bool("controller_ok", env.Controller != nil).
+ 		Bool("resource_ok", env.Resource != nil)
+ 
+@@ -207,6 +211,9 @@ func ClientMaaFWVersion() string { return Get().ClientMaaFWVersion }
+ // ProjectVersion returns the PI_VERSION value (resource project version from interface.json).
+ func ProjectVersion() string { return Get().Version }
+ 
++// UserDataDir returns the PI_USER_DATA_DIR value, or empty if not provided by the Client.
++func UserDataDir() string { return Get().UserDataDir }
++
+ // GetController returns the parsed Controller, or nil if PI_CONTROLLER was absent or empty.
+ func GetController() *Controller { return Get().Controller }
+ 
+diff --git a/docs/zh_cn/developers/go-service-pkg.md b/docs/zh_cn/developers/go-service-pkg.md
+index c2cb3ad0..71d810a3 100644
+--- a/docs/zh_cn/developers/go-service-pkg.md
++++ b/docs/zh_cn/developers/go-service-pkg.md
+@@ -217,13 +217,14 @@ json.Unmarshal(jsonclean.Clean(raw), &out)
+ 
+ 路径：`pkg/pienv/`
+ 
+-启动时 Client 会注入 `PI_*`（见 Project Interface v2.5）。`Init()` / `Get()` 解析为单例：
++启动时 Client 会注入 `PI_*`（见 Project Interface v2.11）。`Init()` / `Get()` 解析为单例：
+ 
+ - `ClientLanguage()` → 交给 `i18n`
+ - `ControllerType()` / `ControllerName()` → 区分 Win32 / Adb 等
+ - `ResourceName()`、版本号等
++- `UserDataDir()` → Client 注入的 `PI_USER_DATA_DIR` 原值；持久化路径使用 `fsutil` 的解析结果
+ 
+-不要自己再 `os.Getenv("PI_...")` 散落解析。
++不要自己再 `os.Getenv("PI_...")` 散落解析。`fsutil` 为了在日志初始化前确定输出目录，仅在包初始化时读取 `pienv.EnvUserDataDir`，不触发 `pienv` 的日志输出。
+ 
+ 判断控制器类型一律用 `ControllerType()`，不要为此去取 controller 调 `GetInfo()`：同一回调里每多取一次 controller，之前拿到的那个就会失效（见[编码规范 · 回调里的句柄怎么用](./coding-standards.md#回调里的句柄怎么用)）。
+ 
+@@ -240,12 +241,13 @@ json.Unmarshal(jsonclean.Clean(raw), &out)
+ 
+ 路径：`pkg/fsutil/`
+ 
+-**输出路径**：日志、调试截图、`debug/record/` 下的记录、导出文件等持久化输出，统一以**进程启动时的工作目录**为根，不依赖调用时的工作目录，也不依赖可执行文件位置。
++**输出路径**：日志、调试截图、`debug/record/` 下的记录、导出文件等持久化输出，统一以 **`PI_USER_DATA_DIR` 指定的用户数据目录**为根；未注入或为空时回退到进程启动时的工作目录。目录在启动期捕获，不依赖调用时的工作目录，也不依赖可执行文件位置。`PI_USER_DATA_DIR` 必须是绝对路径，不要求包含项目资源。
+ 
+ | 函数 | 用途 |
+ | ----------------------- | ---------------------------------------------------------------- |
+ | `StartupDir()` | 返回启动时捕获的工作目录及捕获错误；`main` 启动期检查一次，失败即退出 |
+-| `OutputPath(parts...)` | 把相对路径拼到启动工作目录下，返回绝对路径 |
++| `UserDataDir()` | 返回共享用户数据目录及解析错误；`main` 在初始化日志前检查，非法相对路径会终止启动 |
++| `OutputPath(parts...)` | 把相对路径拼到共享用户数据目录下，返回绝对路径 |
+ 
+ ```go
+ path := fsutil.OutputPath("debug", "record", "IMS.json")

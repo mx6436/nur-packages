@@ -16,29 +16,29 @@
 
 let
   pname = "maaend";
-  version = "2.31.0-beta.6";
+  version = "2.33.0-beta.2";
 
   src = fetchFromGitHub {
     owner = "MaaEnd";
     repo = "MaaEnd";
     tag = "v${version}";
-    hash = "sha256-eqe18gL4+CQNYxZDGJGnHttyVjAVpZNTNdOHHLk0w+Q=";
+    hash = "sha256-V3BJLgbf95QacNkDlbA4Bch6JA+WK2G297XXVbMc0B8=";
   };
 
   # agent/cpp-algo/MaaUtils submodule
   maaUtils = fetchFromGitHub {
     owner = "MaaXYZ";
     repo = "MaaUtils";
-    rev = "6e9ba33f6ad835418097d9324c01c44a82825a2b";
-    hash = "sha256-g6FoqD3EBldHwgULILmxxR9rJajBP5fm6YJynUA8TFY=";
+    rev = "f8994a38ddc6858800dfea8a04e958a0adbfb184";
+    hash = "sha256-OE5XW+1wm6rMHcWbaXrPxMpUe0AZWt0BZYZBxAR/T38=";
   };
 
   # assets/resource/model submodule
   maaendAI = fetchFromGitHub {
     owner = "MaaEnd";
     repo = "MaaEnd-AI";
-    rev = "3178323b321a5853a929dd3c4b98896ec0eb4f45";
-    hash = "sha256-syNCvK+4UDUC8PZY+uym0fFX5dmI8UrLx0B5Vn8NFEk=";
+    rev = "c674ceff042408687efe4e05c320d6b0865645c2";
+    hash = "sha256-OVwACMhPBCcDMZ+S4lEVuH0aF1bBhDqC1uUrfTBfeYE=";
   };
 
   go-service = callPackage ./go-service.nix {
@@ -72,7 +72,6 @@ let
     license = lib.licenses.agpl3Only;
     mainProgram = "MaaEnd";
     platforms = lib.platforms.linux;
-    broken = true;
   };
 in
 

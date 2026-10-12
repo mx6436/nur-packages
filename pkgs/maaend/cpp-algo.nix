@@ -41,7 +41,7 @@ stdenv.mkDerivation (finalAttrs: {
   ];
 
   patches = [
-    ./0002-cpp-data-dir.patch
+    ./user-data-dir.patch
   ];
 
   # MaaUtils submodule
