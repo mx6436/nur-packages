@@ -1,5 +1,5 @@
 {
-  "gameDataRev": "8b178dd48698e5e7b12f0cc319ddab149f2ffc5c",
+  "gameDataRev": "312b4597691e0a29cf9828a15b592757dba86949",
   "files": {
     "AvatarConfig.json": "sha256-nle143ALUlo/cJeJXTQXf3aQEgNKyb0EKDGMP/R/iJ4=",
     "AvatarConfigLD.json": "sha256-doQQlapkStJXVccHx54mC+jUuG6iANZunUaFU2qAdzA=",
@@ -12,6 +12,6 @@
     "RelicConfig.json": "sha256-OQxtfHop6wHkRTHpdgDwvv5Ijm5lQ+YnoQb+jBXb4s8=",
     "RelicMainAffixConfig.json": "sha256-EtKxp0untMcrCOrtq9T+KAS/kJNWd2qBC4vLPJzW7Is=",
     "RelicSubAffixConfig.json": "sha256-UuxusWfanSzXvOdpYNgDH3md4l9L7NfxX00lOg+Uiec=",
-    "TextMapEN.json": "sha256-qcwwoCrLRDj9ir0j9P9Q6wi/aEb8YKuGEbWyfolt1iA="
+    "TextMapEN.json": "sha256-8ohboC4ybvSQtkLUnlTLeoPKyqSQhzslQIiOzXbEnrY="
   }
 }
