@@ -46,9 +46,7 @@ stdenv.mkDerivation (finalAttrs: {
 
   # MaaUtils submodule
   prePatch = ''
-    rm -rf agent/cpp-algo/MaaUtils
-    cp -r ${maaUtils} agent/cpp-algo/MaaUtils
-    chmod -R u+w agent/cpp-algo/MaaUtils
+    cp -rT ${maaUtils} agent/cpp-algo/MaaUtils
   '';
 
   postPatch = ''

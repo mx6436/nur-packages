@@ -74,16 +74,10 @@ stdenv.mkDerivation (finalAttrs: {
 
   passthru.updateScript = ./update.sh;
 
-  # submodules
+  # fill the empty submodule dirs from the source tarball with pinned fetches
   postUnpack = ''
-    # contains source/MaaUtils/MaaUtils.cmake
-    rm -rf "$sourceRoot/source/MaaUtils"
-    cp -r --reflink=auto ${MaaUtils} "$sourceRoot/source/MaaUtils"
-    chmod -R u+w "$sourceRoot/source/MaaUtils"
-
-    rm -rf "$sourceRoot/3rdparty/MaaAgentBinary"
-    cp -r --reflink=auto ${MaaAgentBinary} "$sourceRoot/3rdparty/MaaAgentBinary"
-    chmod -R u+w "$sourceRoot/3rdparty/MaaAgentBinary"
+    cp -rT ${MaaUtils} "$sourceRoot/source/MaaUtils"
+    cp -rT ${MaaAgentBinary} "$sourceRoot/3rdparty/MaaAgentBinary"
   '';
 
   postPatch = ''

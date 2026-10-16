@@ -109,19 +109,18 @@ stdenvNoCC.mkDerivation (finalAttrs: {
     mkdir -p $out/bin $out/lib/{maafw,agent} $out/share/icons/hicolor/512x512/apps
 
     # MXU hardcodes MAA library path to $exe_dir/maafw
-    cp -r ${maa-framework}/lib/. $out/lib/maafw
-    cp -r ${maa-framework}/share/MaaAgentBinary $out/lib/maafw/MaaAgentBinary
+    cp -rT ${maa-framework}/lib $out/lib/maafw
+    cp -rT ${maa-framework}/share/MaaAgentBinary $out/lib/maafw/MaaAgentBinary
 
     cp ${mxu-unwrapped}/bin/mxu $out/lib/mxu
     ln -s $out/lib/mxu $out/bin/MaaEnd  # This symlink will be wrapped by wrapGAppsHook3
 
     cp ${go-service}/bin/go-service $out/lib/agent/go-service
     cp ${cpp-algo}/agent/cpp-algo $out/lib/agent/cpp-algo
-    cp -r assets/. $out/lib
+    cp -rT assets $out/lib
 
     # assets/resource/model submodule
-    rm -rf $out/lib/resource/model
-    ln -s ${maaendAI} $out/lib/resource/model
+    cp -rT ${maaendAI} $out/lib/resource/model
 
     cp README.md $out/lib/README.md
     cp LICENSE $out/lib/LICENSE
