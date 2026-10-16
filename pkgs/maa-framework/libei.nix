@@ -1,4 +1,8 @@
-{ lib, libei, fetchFromGitLab }:
+{
+  lib,
+  libei,
+  fetchFromGitLab,
+}:
 
 # MaaFramework's Linux controller requires libei >= 1.6.0, while
 # nixos-26.05 still provides 1.5.0. Keep newer nixpkgs versions unchanged.
