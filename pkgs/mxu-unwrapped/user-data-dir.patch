@@ -1,8 +1,8 @@
 diff --git a/src-tauri/src/commands/file_ops.rs b/src-tauri/src/commands/file_ops.rs
-index 305775b..6570bbd 100644
+index 51e4122..b7975d9 100644
 --- a/src-tauri/src/commands/file_ops.rs
 +++ b/src-tauri/src/commands/file_ops.rs
-@@ -293,7 +293,8 @@ pub fn get_exe_dir() -> Result<String, String> {
+@@ -296,7 +296,8 @@ pub fn get_exe_dir() -> Result<String, String> {
  
  /// 获取应用数据目录路径
  /// - macOS: ~/Library/Application Support/MXU/
@@ -13,10 +13,10 @@ index 305775b..6570bbd 100644
  pub fn get_data_dir() -> Result<String, String> {
      let data_dir = get_app_data_dir()?;
 diff --git a/src-tauri/src/commands/maa_agent.rs b/src-tauri/src/commands/maa_agent.rs
-index d276381..eda4959 100644
+index 1f0d798..c46b857 100644
 --- a/src-tauri/src/commands/maa_agent.rs
 +++ b/src-tauri/src/commands/maa_agent.rs
-@@ -625,13 +625,28 @@ pub async fn start_tasks_impl(
+@@ -663,13 +663,28 @@ pub async fn start_tasks_impl(
  
      // 启动所有 Agent（如果配置了）
      debug!("[start_tasks] Checking agent configs...");
@@ -195,20 +195,6 @@ index 84e0ab2..926ba9e 100644
 +        assert!(linux_data_dir(Some("invalid json"), Some(Path::new("/data")), None).is_err());
 +    }
 +}
-diff --git a/src-tauri/tauri.linux.conf.json b/src-tauri/tauri.linux.conf.json
-index 58b09d3..4d2d379 100644
---- a/src-tauri/tauri.linux.conf.json
-+++ b/src-tauri/tauri.linux.conf.json
-@@ -3,6 +3,9 @@
-   "plugins": {
-     "fs": {
-       "requireLiteralLeadingDot": false
-+    },
-+    "opener": {
-+      "requireLiteralLeadingDot": false
-     }
-   }
- }
 diff --git a/src/services/interfaceLoader.ts b/src/services/interfaceLoader.ts
 index aa3744c..fea095d 100644
 --- a/src/services/interfaceLoader.ts

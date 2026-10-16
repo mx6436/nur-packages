@@ -1,8 +1,8 @@
 diff --git a/src/App.tsx b/src/App.tsx
-index cea49cb..cc39d85 100644
+index 8bd0343..3f9f982 100644
 --- a/src/App.tsx
 +++ b/src/App.tsx
-@@ -93,6 +93,9 @@ type LoadingState = 'loading' | 'success' | 'error';
+@@ -98,6 +98,9 @@ type LoadingState = 'loading' | 'success' | 'error';
  // 页面过渡动画时长（ms）
  const PAGE_TRANSITION_DURATION = 120;
  
@@ -12,8 +12,8 @@ index cea49cb..cc39d85 100644
  const LazySettingsPage = lazy(async () => {
    const module = await import('@/components/SettingsPage');
    return { default: module.SettingsPage };
-@@ -403,6 +406,8 @@ function App() {
-   const pendingAutoTasksRef = useRef(false);
+@@ -413,6 +416,8 @@ function App() {
+   const autoTaskLaunchPendingRef = useRef(false);
    // 尝试自动安装更新（无任务运行中时触发）
    const tryAutoInstallUpdate = useCallback(() => {
 +    if (AUTO_UPDATE_DISABLED) return;
@@ -21,7 +21,7 @@ index cea49cb..cc39d85 100644
      const state = useAppStore.getState();
      if (state.downloadStatus !== 'completed') return;
      if (state.installStatus !== 'idle') return;
-@@ -920,7 +925,7 @@ function App() {
+@@ -1024,7 +1029,7 @@ function App() {
  
        // 检查是否有待安装的更新（上次下载完成但未安装）
        // 调试版本跳过待安装更新检测
@@ -30,7 +30,7 @@ index cea49cb..cc39d85 100644
          const pendingUpdate = await getPendingUpdateInfo();
          if (pendingUpdate) {
            log.info('检测到待安装更新:', pendingUpdate.versionName);
-@@ -951,7 +956,11 @@ function App() {
+@@ -1055,7 +1060,11 @@ function App() {
        }
  
        // 自动检查更新并下载（调试版本跳过，MXU 开发模式跳过）

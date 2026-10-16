@@ -21,7 +21,7 @@ in
 
 rustPlatform.buildRustPackage (finalAttrs: {
   pname = "mxu-unwrapped";
-  version = "2.7.1";
+  version = "2.8.0";
 
   __structuredAttrs = true;
 
@@ -29,7 +29,7 @@ rustPlatform.buildRustPackage (finalAttrs: {
     owner = "MistEO";
     repo = "MXU";
     rev = "v${finalAttrs.version}";
-    hash = "sha256-UMyySk2FgNjOzKbTzxHzike7Ivsm5W4xTA4N144Tv4k=";
+    hash = "sha256-E7RO/fr9zgVmkQTqhOjX+OtH1UGyQ626hK3pzIMCmNg=";
   };
 
   cargoHash = "sha256-uxL66urnN64iCU7BgbOrAUds9YSE+W4cnqeeGrkoCTc=";
@@ -40,7 +40,7 @@ rustPlatform.buildRustPackage (finalAttrs: {
     inherit (finalAttrs) pname version src;
     fetcherVersion = 4;
     inherit pnpm;
-    hash = "sha256-10BoOsAK0EbQsaYauM7MpkGvdh3CBRP3qFfJFlkzw7M=";
+    hash = "sha256-viicjbQj1AEpvR4FOBFsKPUKlcV/2/3B3/9xLnuW7Uk=";
   };
 
   patches = [
