@@ -117,12 +117,6 @@ stdenv.mkDerivation (finalAttrs: {
       '"-Wall;-Werror;-Wextra;-Wno-missing-field-initializers"'
   '';
 
-  # make empty dir to suppress warnings
-  # TODO: add a wrapper for plugins
-  postInstall = ''
-    mkdir -p $out/lib/plugins
-  '';
-
   cmakeFlags = [
     (lib.cmakeFeature "MAA_HASH_VERSION" finalAttrs.version)
     (lib.cmakeBool "WITH_RPATH_LIBRARY" false)
