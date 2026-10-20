@@ -36,7 +36,7 @@ let
       inherit pname version src;
       fetcherVersion = 4;
       inherit pnpm;
-      hash = "sha256-vze8HgDaIL5AkacmjdqVrqluE2KN5/2afo6E5kq2SRs=";
+      hash = "sha256-CJ0g+B1bOJV/aMHMV5e6dJW7bPjLyGq99qdrroQA9Ao=";
       sourceRoot = "${src.name}/web";
     };
 
