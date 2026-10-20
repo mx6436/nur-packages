@@ -13,7 +13,7 @@ stdenvNoCC.mkDerivation (finalAttrs: {
 
   src = fetchzip {
     url = "https://nya.globalslb.net/natfrp/client/launcher-unix/${finalAttrs.version}/natfrp-service_linux_amd64.tar.zst";
-    hash = "sha256-kCJm2kdos43WoikFoFDhDVkU7EjlFoK1+4ASG/CvUTA=";
+    hash = "sha256-H9pWNr4gOYk2fYMRUpKyGDHVA5d6ur9Jr6sbReab3vI=";
     nativeBuildInputs = [ zstd ];
     stripRoot = false;
   };
