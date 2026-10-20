@@ -16,7 +16,7 @@ let
 in
 effectiveStdenv.mkDerivation (finalAttrs: {
   pname = "fastdeploy-ppocr";
-  version = "0-unstable-2025-08-12";
+  version = "0-unstable-2026-09-18";
 
   __structuredAttrs = true;
   strictDeps = true;
