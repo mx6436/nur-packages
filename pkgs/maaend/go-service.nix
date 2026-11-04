@@ -21,8 +21,4 @@ buildGoModule (finalAttrs: {
 
   modRoot = "agent/go-service";
   subPackages = [ "." ];
-
-  patches = [
-    ./user-data-dir.patch
-  ];
 })

@@ -40,10 +40,6 @@ stdenv.mkDerivation (finalAttrs: {
     zlib
   ];
 
-  patches = [
-    ./user-data-dir.patch
-  ];
-
   # MaaUtils submodule
   prePatch = ''
     cp -rT ${maaUtils} agent/cpp-algo/MaaUtils
