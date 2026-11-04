@@ -1,71 +1,95 @@
+diff --git a/AGENTS.md b/AGENTS.md
+index 2d8d10a..0408b81 100644
+--- a/AGENTS.md
++++ b/AGENTS.md
+@@ -69,9 +69,10 @@ AI 使用信息：
+ 
+ 以下手册提供特定开发场景的详细指引，**按需读取**对应文档即可：
+ 
+-| 场景              | 文档                                                 | 何时阅读                                                      |
+-| ----------------- | ---------------------------------------------------- | ------------------------------------------------------------- |
+-| 新增 MXU 特殊任务 | [docs/add-special-task.md](docs/add-special-task.md) | 需要添加基于 Custom Action 的内置功能任务（如延迟、通知等）时 |
++| 场景                         | 文档                                                 | 何时阅读                                                      |
++| ---------------------------- | ---------------------------------------------------- | ------------------------------------------------------------- |
++| 新增 MXU 特殊任务            | [docs/add-special-task.md](docs/add-special-task.md) | 需要添加基于 Custom Action 的内置功能任务（如延迟、通知等）时 |
++| Rust feature（可选构建行为） | [docs/rust-features.md](docs/rust-features.md)       | 需要启用或新增 Cargo feature（如 `xdg-data-dir`）时           |
+ 
+ ## 5. 相关资源
+ 
+diff --git a/docs/rust-features.md b/docs/rust-features.md
+new file mode 100644
+index 0000000..157b93a
+--- /dev/null
++++ b/docs/rust-features.md
+@@ -0,0 +1,18 @@
++# Rust feature
++
++后端 (`src-tauri`) 用 Cargo feature 承载可选行为，默认构建保持既有行为。目前只有一个：
++
++## `xdg-data-dir`
++
++Linux 数据目录改为 `$XDG_DATA_HOME/{项目名}`（未设置时 `~/.local/share/{项目名}`）。默认关闭，此时与 macOS/Windows 一样按 exe 所在目录存放，旧版 Linux 数据（`config/`、`debug/`、`cache/`）因此无需迁移。
++
++```bash
++pnpm tauri build --features xdg-data-dir
++cd src-tauri && cargo test --features xdg-data-dir
++```
++
++- 项目名取 exe 目录下 `interface.json` 的 `name`（JSONC，缺失时 `MXU`），必须是单段目录名，否则报错。
++- `XDG_DATA_HOME` 非绝对路径时被忽略；`HOME` 也无效时报错。
++- 开启后配置、日志、缓存、更新包下载目录都会改变，切换构建方式后需重启客户端。
++
++实现见 `src-tauri/src/commands/utils.rs` 的 `get_app_data_dir` / `linux_data_dir`，单测随 feature 条件编译。
+diff --git a/src-tauri/Cargo.toml b/src-tauri/Cargo.toml
+index 65734f1..983dc4a 100644
+--- a/src-tauri/Cargo.toml
++++ b/src-tauri/Cargo.toml
+@@ -14,6 +14,11 @@ edition = "2021"
+ name = "mxu_lib"
+ crate-type = ["staticlib", "cdylib", "rlib"]
+ 
++[features]
++# Linux: 数据目录遵循 XDG 规范（$XDG_DATA_HOME/{项目名}，默认 ~/.local/share/{项目名}）
++# 默认关闭以保持 exe 目录的便携式部署；开启后与旧版本数据目录不兼容。
++xdg-data-dir = []
++
+ [build-dependencies]
+ tauri-build = { version = "2", features = [] }
+ 
 diff --git a/src-tauri/src/commands/file_ops.rs b/src-tauri/src/commands/file_ops.rs
-index 51e4122..b7975d9 100644
+index cc1f0e2..15abd25 100644
 --- a/src-tauri/src/commands/file_ops.rs
 +++ b/src-tauri/src/commands/file_ops.rs
-@@ -296,7 +296,8 @@ pub fn get_exe_dir() -> Result<String, String> {
+@@ -326,7 +326,8 @@ pub fn get_exe_dir() -> Result<String, String> {
  
  /// 获取应用数据目录路径
  /// - macOS: ~/Library/Application Support/MXU/
 -/// - Windows/Linux: exe 所在目录
-+/// - Linux: $XDG_DATA_HOME/{项目名}，默认 ~/.local/share/{项目名}
-+/// - Windows: exe 所在目录
++/// - Linux（`xdg-data-dir` feature）: $XDG_DATA_HOME/{项目名}，默认 ~/.local/share/{项目名}
++/// - 其他: exe 所在目录
  #[tauri::command]
  pub fn get_data_dir() -> Result<String, String> {
      let data_dir = get_app_data_dir()?;
-diff --git a/src-tauri/src/commands/maa_agent.rs b/src-tauri/src/commands/maa_agent.rs
-index 1f0d798..c46b857 100644
---- a/src-tauri/src/commands/maa_agent.rs
-+++ b/src-tauri/src/commands/maa_agent.rs
-@@ -663,13 +663,28 @@ pub async fn start_tasks_impl(
- 
-     // 启动所有 Agent（如果配置了）
-     debug!("[start_tasks] Checking agent configs...");
--    let pi_envs = Arc::new(pi_envs.unwrap_or_default());
-     if let Some(configs) = agent_configs {
-         if configs.is_empty() {
-             debug!("[start_tasks] Agent configs list is empty, skipping agent setup");
-         } else {
-             info!("[start_tasks] Starting {} agent(s)...", configs.len());
- 
-+            // PI v2.11.0: 使用后端实际数据目录，不随资源目录或客户端传值变化。
-+            let data_dir = super::utils::get_app_data_dir()?;
-+            let data_dir = if data_dir.is_absolute() {
-+                data_dir
-+            } else {
-+                std::env::current_dir()
-+                    .map_err(|e| e.to_string())?
-+                    .join(data_dir)
-+            };
-+            let mut pi_envs = pi_envs.unwrap_or_default();
-+            pi_envs.insert(
-+                "PI_USER_DATA_DIR".to_string(),
-+                data_dir.to_string_lossy().to_string(),
-+            );
-+            let pi_envs = Arc::new(pi_envs);
-+
-             // 用于收集所有成功启动的 agent，失败时需要回滚清理
-             let mut new_clients = Vec::new();
-             let mut new_children = Vec::new();
 diff --git a/src-tauri/src/commands/utils.rs b/src-tauri/src/commands/utils.rs
-index 84e0ab2..926ba9e 100644
+index 312a062..cd0e740 100644
 --- a/src-tauri/src/commands/utils.rs
 +++ b/src-tauri/src/commands/utils.rs
-@@ -169,7 +169,8 @@ pub fn emit_config_changed(app: &AppHandle) {
+@@ -234,7 +234,8 @@ pub fn emit_config_changed(app: &AppHandle, client_id: &str, revision: &str) {
  
  /// 获取应用数据目录
  /// - macOS: ~/Library/Application Support/MXU/
 -/// - Windows/Linux: exe 所在目录（保持便携式部署）
-+/// - Linux: $XDG_DATA_HOME/{项目名}，默认 ~/.local/share/{项目名}
-+/// - Windows: exe 所在目录（保持便携式部署）
++/// - Linux（`xdg-data-dir` feature）: $XDG_DATA_HOME/{项目名}，默认 ~/.local/share/{项目名}
++/// - 其他: exe 所在目录（保持便携式部署）
  pub fn get_app_data_dir() -> Result<PathBuf, String> {
      #[cfg(target_os = "macos")]
      {
-@@ -181,13 +182,63 @@ pub fn get_app_data_dir() -> Result<PathBuf, String> {
+@@ -246,13 +247,70 @@ pub fn get_app_data_dir() -> Result<PathBuf, String> {
          Ok(path)
      }
  
 -    #[cfg(not(target_os = "macos"))]
-+    #[cfg(target_os = "linux")]
++    #[cfg(all(target_os = "linux", feature = "xdg-data-dir"))]
 +    {
 +        let interface_path = get_exe_directory()?.join("interface.json");
 +        let content = match std::fs::read_to_string(&interface_path) {
@@ -75,17 +99,24 @@ index 84e0ab2..926ba9e 100644
 +        };
 +        let xdg_data_home = std::env::var_os("XDG_DATA_HOME").map(PathBuf::from);
 +        let home = std::env::var_os("HOME").map(PathBuf::from);
-+        linux_data_dir(content.as_deref(), xdg_data_home.as_deref(), home.as_deref())
++        linux_data_dir(
++            content.as_deref(),
++            xdg_data_home.as_deref(),
++            home.as_deref(),
++        )
 +    }
 +
-+    #[cfg(not(any(target_os = "macos", target_os = "linux")))]
++    #[cfg(not(any(
++        target_os = "macos",
++        all(target_os = "linux", feature = "xdg-data-dir")
++    )))]
      {
 -        // Windows/Linux 保持便携式，使用 exe 所在目录
          get_exe_directory()
      }
  }
  
-+#[cfg(target_os = "linux")]
++#[cfg(all(target_os = "linux", feature = "xdg-data-dir"))]
 +fn linux_data_dir(
 +    interface_content: Option<&str>,
 +    xdg_data_home: Option<&std::path::Path>,
@@ -126,12 +157,12 @@ index 84e0ab2..926ba9e 100644
  /// 规范化路径：移除冗余的 `.`、处理 `..`、统一分隔符
  /// 使用 Path::components() 解析，不需要路径实际存在
  pub fn normalize_path(path: &str) -> PathBuf {
-@@ -304,3 +355,68 @@ pub fn build_launch_command(
+@@ -369,3 +427,68 @@ pub fn build_launch_command(
  
      cmd
  }
 +
-+#[cfg(all(test, target_os = "linux"))]
++#[cfg(all(test, target_os = "linux", feature = "xdg-data-dir"))]
 +mod tests {
 +    use super::linux_data_dir;
 +    use std::path::{Path, PathBuf};
@@ -196,7 +227,7 @@ index 84e0ab2..926ba9e 100644
 +    }
 +}
 diff --git a/src/services/interfaceLoader.ts b/src/services/interfaceLoader.ts
-index aa3744c..fea095d 100644
+index c20a58d..9cbe1e4 100644
 --- a/src/services/interfaceLoader.ts
 +++ b/src/services/interfaceLoader.ts
 @@ -39,7 +39,7 @@ export interface LoadResult {
@@ -204,7 +235,7 @@ index aa3744c..fea095d 100644
    translations: Record<string, Record<string, string>>;
    basePath: string;
 -  dataPath: string; // 数据目录（macOS: ~/Library/Application Support/MXU/，其他平台同 basePath）
-+  dataPath: string; // 数据目录（Linux: $XDG_DATA_HOME/{项目名}，macOS: ~/Library/Application Support/MXU/，Windows 同 basePath）
++  dataPath: string; // 数据目录（macOS: Application Support；Linux 启用 xdg-data-dir feature: $XDG_DATA_HOME/{项目名}；否则同 basePath）
    webServerPort?: number; // 后端 Web 服务器实际监听端口（浏览器模式下用于 WS 直连）
    backendOS?: string; // 后端真实 OS（用于控制器过滤、更新匹配等；Tauri/HTTP 路径填充，dev 预览为空）
    backendArch?: string; // 后端真实架构
@@ -213,27 +244,27 @@ index aa3744c..fea095d 100644
      log.info('basePath (绝对路径):', basePath);
  
 -    // 获取数据目录（macOS 使用 Application Support，其他平台同 basePath）
-+    // 获取数据目录（Linux 使用 XDG，macOS 使用 Application Support，Windows 同 basePath）
++    // 获取数据目录（macOS 使用 Application Support，Linux 启用 xdg-data-dir feature 时使用 XDG，否则同 basePath）
      const dataPath = await getDataDir();
      log.info('dataPath (数据目录):', dataPath);
  
 diff --git a/src/services/updateService.ts b/src/services/updateService.ts
-index b98f555..0657dbb 100644
+index 47f6da2..82c0a8a 100644
 --- a/src/services/updateService.ts
 +++ b/src/services/updateService.ts
-@@ -929,8 +929,8 @@ export async function checkAndPrepareDownload(
+@@ -941,8 +941,8 @@ export async function checkAndPrepareDownload(
  
  /**
   * 获取更新包保存路径
 - * @param dataPath 数据目录（macOS: ~/Library/Application
 - *     Support/MXU/，其他平台: exe 目录）
-+ * 使用应用数据目录（Linux: $XDG_DATA_HOME/{项目名}，
-+ * macOS: ~/Library/Application Support/MXU/，Windows: exe 目录）。
++ * 使用应用数据目录（macOS: ~/Library/Application Support/MXU/，
++ * Linux 启用 xdg-data-dir feature: $XDG_DATA_HOME/{项目名}，否则为 exe 目录）。
   * @param filename 文件名（可选）。如果不提供，使用默认名称。
   *                 注意：实际保存路径可能由 Rust 下载时从 302 重定向或
   * Content-Disposition 检测后覆盖
 diff --git a/src/stores/types.ts b/src/stores/types.ts
-index 6ba8cf3..fad6f2b 100644
+index 1b18434..0dff1cf 100644
 --- a/src/stores/types.ts
 +++ b/src/stores/types.ts
 @@ -148,7 +148,7 @@ export interface AppState {
@@ -241,35 +272,25 @@ index 6ba8cf3..fad6f2b 100644
    interfaceTranslations: Record<string, Record<string, string>>;
    basePath: string; // exe 所在目录（资源路径）
 -  dataPath: string; // 数据目录（macOS: ~/Library/Application Support/MXU/，其他平台同 basePath）
-+  dataPath: string; // 数据目录（Linux: $XDG_DATA_HOME/{项目名}，macOS: ~/Library/Application Support/MXU/，Windows 同 basePath）
++  dataPath: string; // 数据目录（macOS: Application Support；Linux 启用 xdg-data-dir feature: $XDG_DATA_HOME/{项目名}；否则同 basePath）
    setProjectInterface: (pi: ProjectInterface) => void;
    setInterfaceTranslations: (lang: string, translations: Record<string, string>) => void;
    setBasePath: (path: string) => void;
 diff --git a/src/utils/paths.ts b/src/utils/paths.ts
-index 1cfd701..f60f2a5 100644
+index 1cfd701..e0738fd 100644
 --- a/src/utils/paths.ts
 +++ b/src/utils/paths.ts
-@@ -19,7 +19,8 @@ let cachedDataPath: string | null = null;
+@@ -17,9 +17,11 @@ export const isTauri = () => {
+ let cachedDataPath: string | null = null;
+ 
  /**
-  * 获取应用数据目录
+- * 获取应用数据目录
++ * 获取应用数据目录（由后端 `get_data_dir` 决定）
   * - macOS: ~/Library/Application Support/MXU/
 - * - Windows/Linux: exe 所在目录
-+ * - Linux: $XDG_DATA_HOME/{项目名}，默认 ~/.local/share/{项目名}
++ * - Linux: 构建时启用 `xdg-data-dir` feature 则为 $XDG_DATA_HOME/{项目名}，
++ *   默认 ~/.local/share/{项目名}；否则为 exe 所在目录
 + * - Windows: exe 所在目录
   *
   * 结果会被缓存，多次调用不会重复请求
   */
-diff --git a/src/utils/piEnv.ts b/src/utils/piEnv.ts
-index 7fb7ad3..bec6ab8 100644
---- a/src/utils/piEnv.ts
-+++ b/src/utils/piEnv.ts
-@@ -60,7 +60,8 @@ export function buildPiEnvVars(context: PiEnvContext): Record<string, string> {
- 
-   const envs: Record<string, string> = {};
- 
--  envs.PI_INTERFACE_VERSION = 'v2.10.1';
-+  // TODO: 补齐 PI v2.10.2 welcome 数组支持
-+  envs.PI_INTERFACE_VERSION = 'v2.11.0';
-   envs.PI_CLIENT_NAME = 'MXU';
-   envs.PI_CLIENT_VERSION = typeof __MXU_VERSION__ !== 'undefined' ? __MXU_VERSION__ : 'unknown';
-   envs.PI_CLIENT_LANGUAGE = getInterfaceLangKey(language);

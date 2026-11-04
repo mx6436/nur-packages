@@ -1,0 +1,22 @@
+diff --git a/src/services/autoUpdateCheck.ts b/src/services/autoUpdateCheck.ts
+index a4e3f92..89bafc7 100644
+--- a/src/services/autoUpdateCheck.ts
++++ b/src/services/autoUpdateCheck.ts
+@@ -2,6 +2,8 @@ import type { AppState, UpdateInfo } from '@/stores/types';
+ import type { ProjectInterface } from '@/types/interface';
+ import type { CheckAndDownloadOptions } from './updateService';
+ 
++const AUTO_UPDATE_ENABLED: boolean = false;
++
+ type AutoUpdateCheckState = Pick<
+   AppState,
+   | 'projectInterface'
+@@ -34,7 +36,7 @@ export async function runAutoUpdateCheck(
+   { getState, checkAndPrepareDownload, onResult, isCancelled }: AutoUpdateCheckDependencies,
+ ): Promise<void> {
+   const { mirrorchyan_rid: resourceId, version: currentVersion, github, name } = project;
+-  if (!resourceId || !currentVersion || isCancelled?.()) return;
++  if (!AUTO_UPDATE_ENABLED || !resourceId || !currentVersion || isCancelled?.()) return;
+ 
+   const state = getState();
+   if (state.updateCheckLoading || isUpdateBusy(state)) return;

@@ -21,20 +21,24 @@ in
 
 rustPlatform.buildRustPackage (finalAttrs: {
   pname = "mxu-unwrapped";
-  version = "2.8.1";
+  version = "2.9.0-beta.1";
 
   __structuredAttrs = true;
 
   src = fetchFromGitHub {
     owner = "MistEO";
     repo = "MXU";
-    rev = "v${finalAttrs.version}";
-    hash = "sha256-ee1Kg9NxnCmtQ/icQWZ9SqmwWxa3M3svDlENdJeULTg=";
+    tag = "v${finalAttrs.version}";
+    hash = "sha256-SbvDu7dt2Fbkh3WSVAabWoYhx+ax5vK8M+b+VVdYxkw=";
   };
 
-  cargoHash = "sha256-uxL66urnN64iCU7BgbOrAUds9YSE+W4cnqeeGrkoCTc=";
+  cargoHash = "sha256-/E+vx5ctn+ufqg2A/sBcY+W3UotQqzFjC0B829OJzzo=";
   cargoRoot = "src-tauri";
   buildAndTestSubdir = finalAttrs.cargoRoot;
+
+  buildFeatures = [
+    "xdg-data-dir"
+  ];
 
   pnpmDeps = fetchPnpmDeps {
     inherit (finalAttrs) pname version src;
@@ -44,8 +48,8 @@ rustPlatform.buildRustPackage (finalAttrs: {
   };
 
   patches = [
-    ./user-data-dir.patch
-    ./disable-autoupdate.patch
+    ./disable-auto-update.patch
+    ./xdg-data-dir.patch
   ];
 
   # write version to config files, as what they should be
