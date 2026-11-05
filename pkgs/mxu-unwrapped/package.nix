@@ -21,7 +21,7 @@ in
 
 rustPlatform.buildRustPackage (finalAttrs: {
   pname = "mxu-unwrapped";
-  version = "2.9.0-beta.1";
+  version = "2.9.0";
 
   __structuredAttrs = true;
 
@@ -29,10 +29,10 @@ rustPlatform.buildRustPackage (finalAttrs: {
     owner = "MistEO";
     repo = "MXU";
     tag = "v${finalAttrs.version}";
-    hash = "sha256-SbvDu7dt2Fbkh3WSVAabWoYhx+ax5vK8M+b+VVdYxkw=";
+    hash = "sha256-+guxrtYOLw/JfXs/rswQP0m4i+nTDGAqWmfGaVBOw+o=";
   };
 
-  cargoHash = "sha256-/E+vx5ctn+ufqg2A/sBcY+W3UotQqzFjC0B829OJzzo=";
+  cargoHash = "sha256-9Maqma1/Hipzc/OMIcJfvQklz9I+OHRRGo+AN4wDu3g=";
   cargoRoot = "src-tauri";
   buildAndTestSubdir = finalAttrs.cargoRoot;
 
