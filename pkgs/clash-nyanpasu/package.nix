@@ -16,7 +16,9 @@
   rustPlatform,
   wrapGAppsHook3,
 
+  glib,
   glib-networking,
+  gsettings-desktop-schemas,
   libayatana-appindicator,
   libsoup_3,
   openssl,
@@ -187,6 +189,7 @@ rustPlatform.buildRustPackage (finalAttrs: {
   preFixup = ''
     gappsWrapperArgs+=(
       --prefix LD_LIBRARY_PATH : ${lib.makeLibraryPath [ libayatana-appindicator ]}
+      --prefix PATH : ${lib.makeBinPath [ glib ]}
     )
   '';
 
@@ -208,7 +211,9 @@ rustPlatform.buildRustPackage (finalAttrs: {
   ];
 
   buildInputs = [
+    glib
     glib-networking
+    gsettings-desktop-schemas
     libayatana-appindicator
     libsoup_3
     openssl
