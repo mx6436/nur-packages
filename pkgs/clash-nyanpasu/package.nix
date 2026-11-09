@@ -24,7 +24,6 @@
   openssl,
   webkitgtk_4_1,
 
-  clash-rs,
   dbip-country-lite,
   mihomo,
   v2ray-rules-dat,
@@ -195,7 +194,6 @@ rustPlatform.buildRustPackage (finalAttrs: {
 
   postFixup = ''
     ln -s ${mihomo}/bin/mihomo $out/bin/mihomo
-    ln -s ${clash-rs}/bin/clash-rs $out/bin/clash-rs
     ln -s ${nyanpasu-service}/bin/nyanpasu-service $out/bin/nyanpasu-service
   '';
 
