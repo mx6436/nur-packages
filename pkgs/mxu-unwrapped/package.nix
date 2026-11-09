@@ -33,6 +33,13 @@ rustPlatform.buildRustPackage (finalAttrs: {
     hash = "sha256-3N+OJgWJtpLDzKQJvme0YWGrZAADzqmlRd4fvAE/Yy0=";
   };
 
+  pnpmDeps = fetchPnpmDeps {
+    inherit (finalAttrs) pname version src;
+    fetcherVersion = 4;
+    inherit pnpm;
+    hash = "sha256-viicjbQj1AEpvR4FOBFsKPUKlcV/2/3B3/9xLnuW7Uk=";
+  };
+
   cargoHash = "sha256-UTJiIoVUq1lyZsmKhtoxOMFMN64xXVzVcW1VtdUuLWI=";
   cargoRoot = "src-tauri";
   buildAndTestSubdir = finalAttrs.cargoRoot;
@@ -41,12 +48,7 @@ rustPlatform.buildRustPackage (finalAttrs: {
     "xdg-data-dir"
   ];
 
-  pnpmDeps = fetchPnpmDeps {
-    inherit (finalAttrs) pname version src;
-    fetcherVersion = 4;
-    inherit pnpm;
-    hash = "sha256-viicjbQj1AEpvR4FOBFsKPUKlcV/2/3B3/9xLnuW7Uk=";
-  };
+  env.CARGO_PROFILE_RELEASE_DEBUG = "false";
 
   patches = [
     ./disable-auto-update.patch
@@ -76,8 +78,6 @@ rustPlatform.buildRustPackage (finalAttrs: {
     openssl
     webkitgtk_4_1
   ];
-
-  defaultTauriBundleType = "deb";
 
   meta = {
     description = "MaaFramework Next UI";
