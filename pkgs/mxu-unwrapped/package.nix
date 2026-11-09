@@ -10,6 +10,7 @@
   pkg-config,
   rustPlatform,
 
+  aws-lc,
   libayatana-appindicator,
   openssl,
   webkitgtk_4_1,
@@ -70,6 +71,7 @@ rustPlatform.buildRustPackage (finalAttrs: {
   ];
 
   buildInputs = [
+    aws-lc
     libayatana-appindicator
     openssl
     webkitgtk_4_1
