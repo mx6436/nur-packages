@@ -41,7 +41,7 @@ index 0000000..157b93a
 +
 +实现见 `src-tauri/src/commands/utils.rs` 的 `get_app_data_dir` / `linux_data_dir`，单测随 feature 条件编译。
 diff --git a/src-tauri/Cargo.toml b/src-tauri/Cargo.toml
-index 65734f1..983dc4a 100644
+index 71821c2..2475005 100644
 --- a/src-tauri/Cargo.toml
 +++ b/src-tauri/Cargo.toml
 @@ -14,6 +14,11 @@ edition = "2021"
@@ -56,6 +56,31 @@ index 65734f1..983dc4a 100644
  [build-dependencies]
  tauri-build = { version = "2", features = [] }
  
+diff --git a/src-tauri/src/commands/download.rs b/src-tauri/src/commands/download.rs
+index 6a5e4e1..44f4b64 100644
+--- a/src-tauri/src/commands/download.rs
++++ b/src-tauri/src/commands/download.rs
+@@ -13,7 +13,7 @@ use super::types::GitHubRelease;
+ use reqwest::header::{ACCEPT, AUTHORIZATION, USER_AGENT};
+ 
+ use super::types::{DownloadProgressEvent, DownloadResult};
+-use super::update::move_to_old_folder;
++use super::update::archive_to_data_old;
+ use super::utils::build_user_agent;
+ 
+ /// 进度上报任务的守卫，在函数任意返回路径上都能确保发送停止信号
+@@ -434,9 +434,9 @@ pub async fn download_file(
+         },
+     );
+ 
+-    // 将可能存在的旧文件移动到 old 文件夹
++    // 将可能存在的旧文件归档到数据目录的 old 文件夹
+     if actual_save_path_obj.exists() {
+-        let _ = move_to_old_folder(actual_save_path_obj);
++        let _ = archive_to_data_old(actual_save_path_obj);
+     }
+ 
+     // 重命名临时文件（使用异步版本避免阻塞 runtime 线程）
 diff --git a/src-tauri/src/commands/file_ops.rs b/src-tauri/src/commands/file_ops.rs
 index cc1f0e2..15abd25 100644
 --- a/src-tauri/src/commands/file_ops.rs
@@ -70,8 +95,72 @@ index cc1f0e2..15abd25 100644
  #[tauri::command]
  pub fn get_data_dir() -> Result<String, String> {
      let data_dir = get_app_data_dir()?;
+diff --git a/src-tauri/src/commands/update.rs b/src-tauri/src/commands/update.rs
+index 395a629..6dd255f 100644
+--- a/src-tauri/src/commands/update.rs
++++ b/src-tauri/src/commands/update.rs
+@@ -47,7 +47,7 @@ fn ensure_update_path(path: &std::path::Path) -> Result<(), String> {
+     Ok(())
+ }
+ 
+-/// cache/old 目录锁：全量更新期间旧文件作为回滚备份放在 cache/old，
++/// 安装目录 cache/old 目录锁：全量更新期间旧文件作为回滚备份放在那里，
+ /// 启动时的异步清理必须与之互斥，避免备份在回滚前被删掉
+ pub static OLD_DIR_LOCK: Mutex<()> = Mutex::new(());
+ 
+@@ -256,15 +256,18 @@ pub fn cleanup_dir_contents(dir: &std::path::Path) -> (usize, usize) {
+     (deleted, failed)
+ }
+ 
+-/// 将文件或目录移动到 cache/old 文件夹，处理重名冲突
+-/// 供前端调用，统一文件移动逻辑
++/// 将更新包归档到数据目录下的 cache/old 文件夹
+ #[tauri::command]
+-pub fn move_file_to_old(file_path: String) -> Result<(), String> {
+-    let path = std::path::Path::new(&file_path);
+-    move_to_old_folder(path)
++pub fn move_update_package_to_old(file_path: String) -> Result<(), String> {
++    archive_to_data_old(Path::new(&file_path))
+ }
+ 
+-/// 获取 cache/old 目录路径（启动清理也使用此路径，保证与移入旧文件的位置一致）
++/// 将数据目录中的文件归档到同一文件系统的 cache/old
++pub fn archive_to_data_old(source: &Path) -> Result<(), String> {
++    move_to_old_folder_in_dir(source, &get_data_old_dir()?).map(|_| ())
++}
++
++/// 获取安装目录 cache/old 路径（程序旧文件与回滚备份）
+ pub fn get_old_dir() -> Result<PathBuf, String> {
+     old_dir_for_executable(&get_exe_directory()?, get_app_data_dir)
+ }
+@@ -285,6 +288,11 @@ fn old_dir_for_executable(
+     Ok(old_dir)
+ }
+ 
++/// 获取数据目录 cache/old 路径（更新包归档）
++pub fn get_data_old_dir() -> Result<PathBuf, String> {
++    Ok(get_app_data_dir()?.join("cache").join("old"))
++}
++
+ /// 清空 cache/old 目录，返回 (成功数, 失败数)。
+ /// 删不掉的文件（如仍被旧进程占用）会保留，后续移动遇到重名时自动加后缀
+ fn clear_old_folder(old_dir: &Path) -> (usize, usize) {
+@@ -302,11 +310,12 @@ pub fn move_to_old_folder(source: &std::path::Path) -> Result<(), String> {
+     move_to_old_folder_dest(source).map(|_| ())
+ }
+ 
+-/// 将文件或目录移动到 cache/old，返回移动后的路径（源不存在时返回 None）
++/// 将文件或目录移动到安装目录的 cache/old，返回移动后的路径（源不存在时返回 None）
+ fn move_to_old_folder_dest(source: &Path) -> Result<Option<PathBuf>, String> {
+     move_to_old_folder_in_dir(source, &get_old_dir()?)
+ }
+ 
++/// 将文件或目录移动到指定 cache/old，返回移动后的路径（源不存在时返回 None）
+ fn move_to_old_folder_in_dir(source: &Path, old_dir: &Path) -> Result<Option<PathBuf>, String> {
+     ensure_update_path(source)?;
+     // 只有确认不存在才跳过；其他错误（如权限不足）不能当作不存在，否则回滚时无从还原
 diff --git a/src-tauri/src/commands/utils.rs b/src-tauri/src/commands/utils.rs
-index 312a062..cd0e740 100644
+index 71702ff..3b9090d 100644
 --- a/src-tauri/src/commands/utils.rs
 +++ b/src-tauri/src/commands/utils.rs
 @@ -234,7 +234,8 @@ pub fn emit_config_changed(app: &AppHandle, client_id: &str, revision: &str) {
@@ -157,13 +246,13 @@ index 312a062..cd0e740 100644
  /// 规范化路径：移除冗余的 `.`、处理 `..`、统一分隔符
  /// 使用 Path::components() 解析，不需要路径实际存在
  pub fn normalize_path(path: &str) -> PathBuf {
-@@ -369,3 +427,68 @@ pub fn build_launch_command(
+@@ -495,3 +553,68 @@ pub fn build_launch_command(
  
      cmd
  }
 +
 +#[cfg(all(test, target_os = "linux", feature = "xdg-data-dir"))]
-+mod tests {
++mod linux_data_dir_tests {
 +    use super::linux_data_dir;
 +    use std::path::{Path, PathBuf};
 +
@@ -226,8 +315,157 @@ index 312a062..cd0e740 100644
 +        assert!(linux_data_dir(Some("invalid json"), Some(Path::new("/data")), None).is_err());
 +    }
 +}
+diff --git a/src-tauri/src/lib.rs b/src-tauri/src/lib.rs
+index 402bacc..5b14926 100644
+--- a/src-tauri/src/lib.rs
++++ b/src-tauri/src/lib.rs
+@@ -180,29 +180,44 @@ pub fn run() {
+                 }
+             }
+ 
+-            // 启动时异步清理 cache/old 目录（更新残留的旧文件），不阻塞应用启动
+-            // 路径与更新时移入旧文件的位置一致（macOS 上数据目录与程序目录不同）
+-            if let Ok(old_dir) = commands::update::get_old_dir() {
+-                if old_dir.exists() {
+-                    std::thread::spawn(move || {
+-                        // 与全量更新互斥：更新期间 cache/old 中是回滚备份
+-                        let _guard = commands::update::OLD_DIR_LOCK
+-                            .lock()
+-                            .unwrap_or_else(|e| e.into_inner());
++            // 启动时异步清理 cache/old 目录（安装目录旧文件与数据目录的更新包归档），
++            // 不阻塞应用启动
++            let mut old_dirs: Vec<_> = [
++                commands::update::get_old_dir(),
++                commands::update::get_data_old_dir(),
++            ]
++            .into_iter()
++            .flatten()
++            .filter(|dir| dir.exists())
++            .collect();
++            old_dirs.sort();
++            old_dirs.dedup();
++            if !old_dirs.is_empty() {
++                std::thread::spawn(move || {
++                    // 与全量更新互斥：更新期间安装目录 cache/old 中是回滚备份
++                    let _guard = commands::update::OLD_DIR_LOCK
++                        .lock()
++                        .unwrap_or_else(|e| e.into_inner());
++                    for old_dir in old_dirs {
+                         let (deleted, failed) = commands::cleanup_dir_contents(&old_dir);
+                         if deleted > 0 || failed > 0 {
+                             if failed == 0 {
+-                                log::info!("Cleaned up cache/old: {} items deleted", deleted);
++                                log::info!(
++                                    "Cleaned up {}: {} items deleted",
++                                    old_dir.display(),
++                                    deleted
++                                );
+                             } else {
+                                 log::warn!(
+-                                    "Cleaned up cache/old: {} deleted, {} failed",
++                                    "Cleaned up {}: {} deleted, {} failed",
++                                    old_dir.display(),
+                                     deleted,
+                                     failed
+                                 );
+                             }
+                         }
+-                    });
+-                }
++                    }
++                });
+             }
+ 
+             // 启动时自动加载 MaaFramework DLL
+@@ -318,7 +333,7 @@ pub fn run() {
+             commands::update::apply_full_update,
+             commands::update::cleanup_extract_dir,
+             commands::update::fallback_update,
+-            commands::update::move_file_to_old,
++            commands::update::move_update_package_to_old,
+             commands::update::cleanup_update_artifacts,
+             commands::update::current_exe_exists,
+             // 下载命令
+diff --git a/src/components/InstallConfirmModal.tsx b/src/components/InstallConfirmModal.tsx
+index fd96507..8aa3956 100644
+--- a/src/components/InstallConfirmModal.tsx
++++ b/src/components/InstallConfirmModal.tsx
+@@ -41,6 +41,7 @@ export function InstallConfirmModal() {
+     updateInfo,
+     projectInterface,
+     basePath,
++    dataPath,
+     downloadSavePath,
+     showInstallConfirmModal,
+     installStatus,
+@@ -76,6 +77,7 @@ export function InstallConfirmModal() {
+       const success = await installUpdate({
+         zipPath: downloadSavePath,
+         targetDir: basePath,
++        dataPath,
+         newVersion: updateInfo.versionName,
+         projectName,
+         onProgress: (stage, detail) => {
+@@ -100,7 +102,16 @@ export function InstallConfirmModal() {
+       setInstallStatus('failed');
+       setInstallError(formatInstallError(error, t));
+     }
+-  }, [downloadSavePath, basePath, updateInfo, projectName, setInstallStatus, setInstallError, t]);
++  }, [
++    downloadSavePath,
++    basePath,
++    dataPath,
++    updateInfo,
++    projectName,
++    setInstallStatus,
++    setInstallError,
++    t,
++  ]);
+ 
+   // 重启应用（直接重启，不再确认）
+   const handleRestart = useCallback(async () => {
+@@ -181,6 +192,7 @@ export function InstallConfirmModal() {
+           const success = await installUpdate({
+             zipPath: downloadSavePath,
+             targetDir: basePath,
++            dataPath,
+             newVersion: updateInfo.versionName,
+             projectName,
+             onProgress: (stage, detail) => {
+@@ -219,6 +231,7 @@ export function InstallConfirmModal() {
+     installStatus,
+     downloadSavePath,
+     basePath,
++    dataPath,
+     updateInfo,
+     projectName,
+     setInstallStatus,
+diff --git a/src/services/configService.ts b/src/services/configService.ts
+index 76fbbe5..5e82ecf 100644
+--- a/src/services/configService.ts
++++ b/src/services/configService.ts
+@@ -416,16 +416,16 @@ async function pruneBackups(projectName?: string): Promise<void> {
+ /**
+  * 在更新前备份配置文件到 cache/config_backup/。
+  *
+- * 更新是高风险操作，这里不受滚动备份的 1 天间隔限制，每次都写；
++ * 配置位于数据目录，更新是高风险操作，这里不受滚动备份的 1 天间隔限制，每次都写；
+  * 多出来的同日条目由按份数裁剪消化。
+  */
+ export async function backupConfigBeforeUpdate(
+-  basePath: string,
++  dataPath: string,
+   projectName?: string,
+ ): Promise<void> {
+   if (!isTauri()) return;
+ 
+-  const configPath = getConfigPathSync(basePath, projectName);
++  const configPath = getConfigPathSync(dataPath, projectName);
+ 
+   try {
+     const { exists, readTextFile } = await import('@tauri-apps/plugin-fs');
 diff --git a/src/services/interfaceLoader.ts b/src/services/interfaceLoader.ts
-index c20a58d..9cbe1e4 100644
+index e9064df..5805565 100644
 --- a/src/services/interfaceLoader.ts
 +++ b/src/services/interfaceLoader.ts
 @@ -39,7 +39,7 @@ export interface LoadResult {
@@ -239,7 +477,7 @@ index c20a58d..9cbe1e4 100644
    webServerPort?: number; // 后端 Web 服务器实际监听端口（浏览器模式下用于 WS 直连）
    backendOS?: string; // 后端真实 OS（用于控制器过滤、更新匹配等；Tauri/HTTP 路径填充，dev 预览为空）
    backendArch?: string; // 后端真实架构
-@@ -445,7 +445,7 @@ export async function autoLoadInterface(): Promise<LoadResult> {
+@@ -442,7 +442,7 @@ export async function autoLoadInterface(): Promise<LoadResult> {
      const basePath = relativeBasePath ? `${exeDir}/${relativeBasePath}` : exeDir;
      log.info('basePath (绝对路径):', basePath);
  
@@ -249,10 +487,30 @@ index c20a58d..9cbe1e4 100644
      log.info('dataPath (数据目录):', dataPath);
  
 diff --git a/src/services/updateService.ts b/src/services/updateService.ts
-index 47f6da2..82c0a8a 100644
+index e60ffb6..0341446 100644
 --- a/src/services/updateService.ts
 +++ b/src/services/updateService.ts
-@@ -941,8 +941,8 @@ export async function checkAndPrepareDownload(
+@@ -37,14 +37,14 @@ export function hasInstallFailedInSession(): boolean {
+ }
+ 
+ /**
+- * 将文件移动到 cache/old 文件夹（调用 Rust 端统一实现）
++ * 将更新包归档到数据目录的 cache/old 文件夹（调用 Rust 端统一实现）
+  */
+-async function moveToOldFolder(filePath: string): Promise<void> {
++async function moveUpdatePackageToOld(filePath: string): Promise<void> {
+   try {
+-    await invoke('move_file_to_old', { filePath });
+-    log.info(`已移动到 cache/old: ${filePath}`);
++    await invoke('move_update_package_to_old', { filePath });
++    log.info(`更新包已归档到数据目录 cache/old: ${filePath}`);
+   } catch (error) {
+-    log.warn(`移动文件到 cache/old 失败: ${filePath}`, error);
++    log.warn(`归档更新包失败: ${filePath}`, error);
+   }
+ }
+ 
+@@ -942,8 +942,8 @@ export async function checkAndPrepareDownload(
  
  /**
   * 获取更新包保存路径
@@ -263,8 +521,74 @@ index 47f6da2..82c0a8a 100644
   * @param filename 文件名（可选）。如果不提供，使用默认名称。
   *                 注意：实际保存路径可能由 Rust 下载时从 302 重定向或
   * Content-Disposition 检测后覆盖
+@@ -970,6 +970,7 @@ interface ChangesJson {
+ export interface InstallUpdateOptions {
+   zipPath: string; // 下载的更新包路径
+   targetDir: string; // 目标安装目录
++  dataPath: string; // 数据目录（配置备份来源）
+   newVersion: string; // 新版本号（用于兜底时创建文件夹）
+   projectName?: string; // 项目名称（用于备份配置文件）
+   onProgress?: (stage: string, detail?: string) => void;
+@@ -1063,7 +1064,7 @@ export async function installUpdate(options: InstallUpdateOptions): Promise<bool
+   }
+   isInstalling = true;
+ 
+-  const { zipPath, targetDir, newVersion, projectName, onProgress } = options;
++  const { zipPath, targetDir, dataPath, newVersion, projectName, onProgress } = options;
+ 
+   log.info(`开始安装更新: ${zipPath} -> ${targetDir}`);
+ 
+@@ -1082,7 +1083,7 @@ export async function installUpdate(options: InstallUpdateOptions): Promise<bool
+     // 对于 exe/dmg 文件，直接打开而不是解压
+     if (isExecutableInstaller(zipPath)) {
+       log.info(`检测到可执行安装程序，直接打开: ${zipPath}`);
+-      await backupConfigBeforeUpdate(targetDir, projectName);
++      await backupConfigBeforeUpdate(dataPath, projectName);
+       onProgress?.('opening', zipPath);
+ 
+       try {
+@@ -1127,7 +1128,7 @@ export async function installUpdate(options: InstallUpdateOptions): Promise<bool
+ 
+       if (isExtractError(error) && error.corrupt) {
+         // 包已损坏，移走并放弃，避免每次都拿同一个坏包重试
+-        await moveToOldFolder(zipPath);
++        await moveUpdatePackageToOld(zipPath);
+         discardPendingPackage();
+         throw new UpdateInstallError('packageCorrupt', error.message);
+       }
+@@ -1135,7 +1136,7 @@ export async function installUpdate(options: InstallUpdateOptions): Promise<bool
+     }
+ 
+     // 解压成功后再备份配置，避免每次失败的尝试都轮换掉旧备份
+-    await backupConfigBeforeUpdate(targetDir, projectName);
++    await backupConfigBeforeUpdate(dataPath, projectName);
+ 
+     try {
+       // 2. 检查是否为增量包
+@@ -1180,8 +1181,8 @@ export async function installUpdate(options: InstallUpdateOptions): Promise<bool
+ 
+       await invoke('cleanup_extract_dir', { extractDir });
+ 
+-      // 将下载的 zip 文件移动到 old 文件夹
+-      await moveToOldFolder(zipPath);
++      // 将下载的 zip 文件归档到数据目录的 old 文件夹
++      await moveUpdatePackageToOld(zipPath);
+ 
+       // 清理更新残留产物：target_dir/changes.json 和 cache/*.downloading
+       const cacheDir = await getCacheDir();
+@@ -1217,8 +1218,8 @@ export async function installUpdate(options: InstallUpdateOptions): Promise<bool
+ 
+         // 清理临时解压目录
+         await invoke('cleanup_extract_dir', { extractDir }).catch(() => {});
+-        // 清理下载的 zip 文件
+-        await moveToOldFolder(zipPath);
++        // 归档下载的 zip 文件
++        await moveUpdatePackageToOld(zipPath);
+ 
+         // 抛出特殊错误，告知用户可以使用兜底文件夹
+         throw new FallbackUpdateError(
 diff --git a/src/stores/types.ts b/src/stores/types.ts
-index 1b18434..0dff1cf 100644
+index 7e56520..e450b42 100644
 --- a/src/stores/types.ts
 +++ b/src/stores/types.ts
 @@ -148,7 +148,7 @@ export interface AppState {
