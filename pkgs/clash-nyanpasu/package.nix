@@ -16,6 +16,7 @@
   rustPlatform,
   wrapGAppsHook3,
 
+  aws-lc,
   glib,
   glib-networking,
   gsettings-desktop-schemas,
@@ -209,6 +210,7 @@ rustPlatform.buildRustPackage (finalAttrs: {
   ];
 
   buildInputs = [
+    aws-lc
     glib
     glib-networking
     gsettings-desktop-schemas

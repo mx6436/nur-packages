@@ -1,4 +1,5 @@
 {
+  aws-lc,
   lib,
   nyanpasu-runtime,
   nyanpasu-utils,
@@ -38,6 +39,10 @@ rustPlatform.buildRustPackage (finalAttrs: {
         "nixpkgs" \
         "1970-01-01T00:00:00.000Z"
     '')
+  ];
+
+  buildInputs = [
+    aws-lc
   ];
 
   meta = {
