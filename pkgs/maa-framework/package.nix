@@ -22,7 +22,6 @@
 let
   fastdeploy-ppocr = callPackage ./fastdeploy-ppocr.nix { };
 
-  # upstream git submodules, pinned to the commits recorded in MaaFramework
   MaaUtils = fetchFromGitHub {
     owner = "MaaXYZ";
     repo = "MaaUtils";
@@ -41,7 +40,7 @@ in
 
 stdenv.mkDerivation (finalAttrs: {
   pname = "maa-framework";
-  version = "5.16.0-beta.2";
+  version = "5.16.0";
 
   __structuredAttrs = true;
   strictDeps = true;
@@ -50,7 +49,7 @@ stdenv.mkDerivation (finalAttrs: {
     owner = "MaaXYZ";
     repo = "MaaFramework";
     tag = "v${finalAttrs.version}";
-    sha256 = "sha256-vSvWDaQFo/rf00gYFDcn83Dc/vetcMtq27TBOxm1guo=";
+    sha256 = "sha256-Sb792GE+dMVgdZvms3iNIhBBL2o3R54rAFB72QVqmIc=";
   };
 
   nativeBuildInputs = [
@@ -76,7 +75,6 @@ stdenv.mkDerivation (finalAttrs: {
 
   passthru.updateScript = ./update.sh;
 
-  # fill the empty submodule dirs from the source tarball with pinned fetches
   postUnpack = ''
     cp -rT ${MaaUtils} "$sourceRoot/source/MaaUtils"
     cp -rT ${MaaAgentBinary} "$sourceRoot/3rdparty/MaaAgentBinary"
@@ -107,10 +105,13 @@ stdenv.mkDerivation (finalAttrs: {
       "OpenCV REQUIRED COMPONENTS core imgproc imgcodecs" \
       "OpenCV REQUIRED COMPONENTS core imgproc imgcodecs features2d calib3d flann"
 
-    # gcc 在 -Wpedantic 下无法编译 PipeWire/SPA 头文件里的 GNU 复合字面量
+    # gcc 16 在 -Wpedantic 下无法编译 PipeWire/SPA 头文件里的 GNU 复合字面量；
+    # fastdeploy 的多态类没有虚析构函数，-Wdelete-non-virtual-dtor 会在 MaaFramework
+    # 的 InferenceContext::make_shared 里被误报为 error
     substituteInPlace source/MaaUtils/cmake/config.cmake \
-      --replace-fail '"-Wall;-Werror;-Wextra;-Wpedantic;-Wno-missing-field-initializers"' \
-      '"-Wall;-Werror;-Wextra;-Wno-missing-field-initializers"'
+      --replace-fail \
+      '"-Wall;-Werror;-Wextra;-Wpedantic;-Wno-missing-field-initializers"' \
+      '"-Wall;-Werror;-Wextra;-Wno-missing-field-initializers;-Wno-error=delete-non-virtual-dtor"'
   '';
 
   cmakeFlags = [
@@ -120,7 +121,7 @@ stdenv.mkDerivation (finalAttrs: {
   ];
 
   meta = {
-    description = "An automation black-box testing framework based on image recognition";
+    description = "Automation black-box testing framework based on image recognition";
     homepage = "https://maafw.com";
     changelog = "https://github.com/MaaXYZ/MaaFramework/releases/tag/v${finalAttrs.version}";
     license = lib.licenses.lgpl3Only;
