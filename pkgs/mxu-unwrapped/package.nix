@@ -22,7 +22,7 @@ in
 
 rustPlatform.buildRustPackage (finalAttrs: {
   pname = "mxu-unwrapped";
-  version = "2.10.0-beta.2";
+  version = "2.10.0";
 
   __structuredAttrs = true;
 
@@ -30,7 +30,7 @@ rustPlatform.buildRustPackage (finalAttrs: {
     owner = "MistEO";
     repo = "MXU";
     tag = "v${finalAttrs.version}";
-    hash = "sha256-3N+OJgWJtpLDzKQJvme0YWGrZAADzqmlRd4fvAE/Yy0=";
+    hash = "sha256-+Hd/zXtRS6Alu/uW/egKapZdHjqOJPDaHGHWD93tqbk=";
   };
 
   pnpmDeps = fetchPnpmDeps {
