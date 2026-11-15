@@ -25,8 +25,8 @@ let
   MaaUtils = fetchFromGitHub {
     owner = "MaaXYZ";
     repo = "MaaUtils";
-    rev = "55be777e326db9419f45b4082e2bf2a1ed10e697";
-    hash = "sha256-I2PW0VNIk/LYYN/e7rA5cuStDFjHPGIn/I5P+tBGo+M=";
+    rev = "af3fce72982c009ad55c02f47b41e13082738eb9";
+    hash = "sha256-sGbnHCFyYGKubOEbEm7hMAhvhkZrzKgWdNzI1i7xyIc=";
   };
 
   # runtime agent binaries, installed to $out/share/MaaAgentBinary
@@ -40,7 +40,7 @@ in
 
 stdenv.mkDerivation (finalAttrs: {
   pname = "maa-framework";
-  version = "5.16.1";
+  version = "6.0.0-alpha.1";
 
   __structuredAttrs = true;
   strictDeps = true;
@@ -49,7 +49,7 @@ stdenv.mkDerivation (finalAttrs: {
     owner = "MaaXYZ";
     repo = "MaaFramework";
     tag = "v${finalAttrs.version}";
-    sha256 = "sha256-r3wpZT9LuR0hkFh4nccW8GuI6/AQMAMfm3djCEiAX+g=";
+    sha256 = "sha256-qp1n8z+bbdY6PuEHbCYqa4JgPMGSFXXIRxArxk1egRk=";
   };
 
   nativeBuildInputs = [
