@@ -73,7 +73,7 @@ stdenv.mkDerivation (finalAttrs: {
     zlib
   ];
 
-  passthru.updateScript = ./update.sh;
+  passthru.updateScript = ./update.fish;
 
   postUnpack = ''
     cp -rT ${MaaUtils} "$sourceRoot/source/MaaUtils"
