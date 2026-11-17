@@ -15,7 +15,7 @@ buildGoModule (finalAttrs: {
     meta
     ;
 
-  vendorHash = "sha256-PPHmkGxGUNwZTqnb8DQLMRBmxs/CCknaspnhqiKkyo4=";
+  vendorHash = "sha256-Vu0VU+6/qzifu9dW3A2wbBwJL9jvUap0dN3YcoKVl5I=";
 
   __structuredAttrs = true;
 
