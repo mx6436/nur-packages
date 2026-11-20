@@ -16,13 +16,13 @@
 
 let
   pname = "maaend";
-  version = "3.2.0-beta.5";
+  version = "3.2.0-rc.1";
 
   src = fetchFromGitHub {
     owner = "MaaEnd";
     repo = "MaaEnd";
     tag = "v${version}";
-    hash = "sha256-SRYQbPLXadT8PfhXW/J42DZjFDfB7lNwp2jLE2LxKNo=";
+    hash = "sha256-IgBiFRCHnATM5ucvIzo9S34R79cbex0XF7uRBLZCYyc=";
   };
 
   # agent/cpp-algo/MaaUtils submodule
@@ -37,8 +37,8 @@ let
   maaendAI = fetchFromGitHub {
     owner = "MaaEnd";
     repo = "MaaEnd-AI";
-    rev = "c0620cd4f06a1a106a734891bd22b4b487ad7f9e";
-    hash = "sha256-IIwzR27UpG37rjKvwNttldO+IDytPqYYSzMOYE6od3c=";
+    rev = "933fc2eb0fe66437fdc6cf2dad59534430c34c56";
+    hash = "sha256-UO/GnInvxu7k7ebf4tKdyVJBfsKlMHNKxQ4LFZcmrqQ=";
   };
 
   go-service = callPackage ./go-service.nix {
