@@ -16,13 +16,13 @@
 
 let
   pname = "maaend";
-  version = "3.2.0";
+  version = "3.3.0-beta.1";
 
   src = fetchFromGitHub {
     owner = "MaaEnd";
     repo = "MaaEnd";
     tag = "v${version}";
-    hash = "sha256-ZNwUziwwu5s83sxl2w2pAn2W8jK9Z2ijbbPTnwmUpmE=";
+    hash = "sha256-/YiYMfogUY3EjXYc6gTNf4O3f73FOnP1nDbNgj9VOcQ=";
   };
 
   # agent/cpp-algo/MaaUtils submodule
