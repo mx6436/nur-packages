@@ -73,11 +73,11 @@ let
 
   inlang-plugins = {
     message-format = fetchurl {
-      url = "https://fastly.jsdelivr.net/npm/@inlang/plugin-message-format@4/dist/index.js";
-      hash = "sha256-AxykbtpQK6LsKeGnhkM56fNw5dIihY9jJfhJ3/3zkeM=";
+      url = "https://fastly.jsdelivr.net/npm/@inlang/plugin-message-format@4.6.0/dist/index.js";
+      hash = "sha256-4HWYlGjFzgggrAAwBEpkWjyXmYc0ixZXuK9tcWtq1wQ=";
     };
     m-function-matcher = fetchurl {
-      url = "https://fastly.jsdelivr.net/npm/@inlang/plugin-m-function-matcher@2/dist/index.js";
+      url = "https://fastly.jsdelivr.net/npm/@inlang/plugin-m-function-matcher@2.4.3/dist/index.js";
       hash = "sha256-RnXf/UKOuYlPO/n/SrCBcI4K5hrUzRNfGm/1AIoaqbU=";
     };
   };
