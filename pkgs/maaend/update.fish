@@ -1,38 +1,81 @@
-#!/usr/bin/env fish
-
-# Updater for pkgs/maaend.
-#
-# Tracks the newest published release, pre-releases included (v1.2.3-rc.1, ...).
-#
-# Requires: fish, curl, jq, git, gnused, nix (with nix-prefetch-url) in PATH.
-# The vendorHash probe uses the repository's locked nixpkgs.
-# When run outside of such an environment, e.g. in CI, use:
-#   nix shell nixpkgs#fish nixpkgs#nix nixpkgs#jq nixpkgs#curl nixpkgs#gnused nixpkgs#git \
-#     --command fish pkgs/maaend/update.fish
-
-for tool in curl jq git sed nix nix-prefetch-url
-    if not command -q $tool
-        echo "ERROR: '$tool' is required but was not found in PATH" >&2
-        exit 1
-    end
-end
+#!/usr/bin/env -S nix shell nixpkgs#fish nixpkgs#curl nixpkgs#jq nixpkgs#gnused nixpkgs#git nixpkgs#nix --command fish
 
 set repo MaaEnd/MaaEnd
-set pkg_file pkgs/maaend/package.nix
-set go_service_file pkgs/maaend/go-service.nix
+set pkg_dir (path resolve (status dirname))
+set pkg_file $pkg_dir/package.nix
+set go_service_file $pkg_dir/go-service.nix
 
-# submodules fetched as tarballs: <path> <GitHub repo> <nix binding name>
 set submodules \
     "agent/cpp-algo/MaaUtils MaaXYZ/MaaUtils maaUtils" \
     "assets/resource/model MaaEnd/MaaEnd-AI maaendAI"
 
-# test fixtures only, not packaged
-set ignored_submodules tests/MaaEndTestset
+set tmpdir (mktemp -d)
 
-echo "--- Fetching latest release ---"
+function cleanup_tmpdir --on-event fish_exit --on-signal INT --on-signal TERM
+    rm -rf $tmpdir
+end
 
-# The GitHub API is rate limited for unauthenticated requests (HTTP 403),
-# so use a token when one is available.
+function submodule_rev --argument-names sub_path
+    set -l rev (string match -rg '^160000 commit ([0-9a-f]{40})' -- \
+        (git -C $tmpdir/repo ls-tree $tag -- $sub_path))
+    if test (count $rev) -ne 1
+        echo "ERROR: Cannot resolve the submodule gitlink: $sub_path" >&2
+        return 1
+    end
+    echo $rev
+end
+
+function prefetch_hash --argument-names slug rev
+    set -l packed (nix-prefetch-url --unpack --name source "https://github.com/$slug/archive/$rev.tar.gz" 2>/dev/null)
+    if test -z "$packed"
+        return 1
+    end
+    nix hash convert --hash-algo sha256 --to sri $packed
+end
+
+function prefetch_vendor_hash
+    set -l expr "
+let
+  pkgs =
+    if (builtins.tryEval <nixpkgs>).success then
+      import <nixpkgs> { }
+    else
+      import (builtins.getFlake (toString $pkg_dir/../..)).inputs.nixpkgs {
+        system = builtins.currentSystem;
+      };
+  goService = pkgs.callPackage $go_service_file {
+    pname = \"maaend\";
+    version = \"$new_version\";
+    src = pkgs.fetchFromGitHub {
+      owner = \"MaaEnd\";
+      repo = \"MaaEnd\";
+      tag = \"$tag\";
+      hash = \"$src_hash\";
+    };
+    meta = { };
+  };
+  src = goService.goModules;
+in
+(src.overrideAttrs or (f: src // f src)) (_: {
+  outputHash = \"\";
+  outputHashAlgo = \"sha256\";
+})
+"
+    set -l output (nix-build --no-out-link --expr "$expr" 2>&1)
+    set -l got (string match -rg '.*got(?::|\s)\s*\'?((?:sha256|sha512|sha1|blake3|md5)?[-:]?[A-Za-z0-9+/=]+)(?:\'|$)' -- $output)
+    if test (count $got) -eq 0
+        printf '%s\n' $output >&2
+        return 1
+    end
+    nix hash convert --hash-algo sha256 --to sri $got[-1]
+end
+
+function block_of --argument-names binding file
+    sed -n -E "/^  $binding = fetchFromGitHub [{]\$/,/^  [}];\$/p" $file
+end
+
+echo "--- Fetching the latest release ---"
+
 set api_token $GITHUB_TOKEN
 if test -z "$api_token"
     set api_token $GH_TOKEN
@@ -46,182 +89,139 @@ if test -n "$api_token"
     set -a curl_args -H "Authorization: Bearer $api_token"
 end
 
-# /releases/latest only reports stable releases, so list the releases and
-# take the newest non-draft entry. A token may expose drafts, hence the filter.
-set tag_name
-set response (curl $curl_args "https://api.github.com/repos/$repo/releases?per_page=10" 2>/dev/null)
-if test -n "$response"
-    set tag_name (echo $response | jq -er '[.[] | select(.draft | not)][0].tag_name' 2>/dev/null)
-end
-
-if test -z "$tag_name"
-    # Neither rate limited nor token-dependent, and pre-releases are listed.
-    echo "GitHub API unavailable (rate limited?), falling back to the releases atom feed"
-    set atom (curl -fsS "https://github.com/$repo/releases.atom" 2>/dev/null)
-    set atom_tags (echo "$atom" | string match -rg 'releases/tag/([^"<]+)')
-    if test -n "$atom_tags"
-        set tag_name $atom_tags[1]
-    end
-end
-
-if test -z "$tag_name"
-    # Last resort: version-sorted tag list. Git's version sort orders a stable
-    # tag before its own pre-releases, so prefer the stable tag of the highest
-    # base version whenever it exists.
-    echo "Falling back to git ls-remote"
-    set tags (git ls-remote --tags --refs --sort=v:refname "https://github.com/$repo" \
-        | string replace -r '^.*refs/tags/' '' \
-        | string match -re '^v\d.*')
-    if test -n "$tags"
-        set base (string replace -r -- '-(?:alpha|beta|rc|pre|dev)\.\d.*$' '' $tags[-1])
-        if contains -- $base $tags
-            set tag_name $base
-        else
-            set tag_name $tags[-1]
-        end
-    end
-end
-
-if test -z "$tag_name"
-    echo "ERROR: Failed to determine the latest release"
+set tag (curl $curl_args "https://api.github.com/repos/$repo/releases?per_page=20" 2>/dev/null \
+    | jq -er '[.[] | select(.draft | not)][0].tag_name | select(test("^v[0-9]"))' 2>/dev/null)
+if test -z "$tag"
+    echo "ERROR: Failed to determine the latest release of $repo"
     exit 1
 end
 
-set new_version (string replace -r '^v' '' $tag_name)
-
-set current_version (sed -n -E 's/^  version = "(.*)";$/\1/p' $pkg_file)
-if test -z "$current_version"
-    echo "ERROR: Failed to read current version from $pkg_file"
+set new_version (string replace -r '^v' '' $tag)
+set current (string match -rg '^  version = "(.*)";$' <$pkg_file)
+if test (count $current) -ne 1
+    echo "ERROR: Expected exactly one version in $pkg_file"
     exit 1
 end
-if test "$current_version" = "$new_version"
-    echo "Version unchanged: v$new_version; checking hashes"
-else
-    echo "Updating: $current_version -> $new_version"
+if test "$current" = "$new_version"
+    echo "Already up to date: $tag"
+    exit 0
 end
 
-set tmpdir (mktemp -d)
-
-function cleanup_tempdir --on-event fish_exit --on-signal INT --on-signal TERM
-    rm -rf $tmpdir
-end
-
-echo "--- Computing srcHash ---"
-set src_hash (nix-prefetch-url --unpack "https://github.com/$repo/archive/$tag_name.tar.gz" 2>/dev/null)
-if test -z "$src_hash"
-    echo "ERROR: Failed to compute srcHash"
-    exit 1
-end
-set src_hash (nix hash convert --hash-algo sha256 --to sri $src_hash)
-echo "srcHash: $src_hash"
+echo "Updating MaaEnd: $current -> $new_version"
 
 echo "--- Resolving submodule revisions ---"
-git clone --quiet --filter=blob:none --no-checkout --depth 1 --branch $tag_name "https://github.com/$repo" $tmpdir/repo
+git init --quiet $tmpdir/repo
+and git -C $tmpdir/repo fetch --quiet --filter=blob:none --depth 1 \
+    "https://github.com/$repo.git" tag $tag
 or begin
-    echo "ERROR: Failed to clone $repo at $tag_name"
+    echo "ERROR: Failed to fetch $tag from $repo"
     exit 1
 end
 
-git -C $tmpdir/repo show HEAD:.gitmodules > $tmpdir/gitmodules
-set declared_paths (git config -f $tmpdir/gitmodules --get-regexp '\.path$' | string replace -r '^\S+\s+' '')
-
-set sed_args
-set mapped_paths
-# values that must end up in the rewritten files, verified below
-set pins $src_hash
+set revisions
 for entry in $submodules
     set fields (string split ' ' -- $entry)
-    set path $fields[1]
+    set sub_path $fields[1]
     set slug $fields[2]
     set binding $fields[3]
-    set -a mapped_paths $path
 
-    set rev (string match -rg '^160000 commit ([0-9a-f]+)' -- (git -C $tmpdir/repo ls-tree HEAD $path))
-    if test -z "$rev"
-        echo "ERROR: Failed to resolve submodule revision for $path"
-        exit 1
-    end
+    set rev (submodule_rev $sub_path)
+    or exit 1
 
-    set sub_hash (nix-prefetch-url --unpack "https://github.com/$slug/archive/$rev.tar.gz" 2>/dev/null)
-    if test -z "$sub_hash"
-        echo "ERROR: Failed to compute hash for $slug at $rev"
-        exit 1
-    end
-    set sub_hash (nix hash convert --hash-algo sha256 --to sri $sub_hash)
-
-    set -a pins $rev $sub_hash
-
-    echo "$path: $rev"
-    echo "$binding hash: $sub_hash"
-
-    # pin rev and hash inside the binding's fetchFromGitHub block
-    set -a sed_args -e "/^  $binding = fetchFromGitHub \{\$/,/^  \};\$/ s|^    rev = \".*\";\$|    rev = \"$rev\";|"
-    set -a sed_args -e "/^  $binding = fetchFromGitHub \{\$/,/^  \};\$/ s|^    hash = \".*\";\$|    hash = \"$sub_hash\";|"
+    echo "$sub_path: $rev"
+    set -a revisions "$binding $slug $rev"
 end
 
-for declared in $declared_paths
-    if contains -- $declared $mapped_paths; or contains -- $declared $ignored_submodules
-        continue
-    end
-    echo "WARNING: upstream submodule $declared is not handled by this script"
-end
-
-echo "--- Computing vendorHash ---"
-set temp_nix $tmpdir/vendor-fetch.nix
-set repo_root (pwd -P)
-echo '
-let
-  flake = builtins.getFlake "'"$repo_root"'";
-  pkgs = import flake.inputs.nixpkgs { system = builtins.currentSystem; };
-  goService = pkgs.callPackage '"$repo_root/$go_service_file"' {
-    pname = "maaend";
-    version = "'"$new_version"'";
-    src = pkgs.fetchFromGitHub {
-      owner = "MaaEnd";
-      repo = "MaaEnd";
-      tag = "'"$tag_name"'";
-      hash = "'"$src_hash"'";
-    };
-    meta = {};
-  };
-in
-(goService.overrideAttrs { vendorHash = pkgs.lib.fakeHash; }).goModules
-' > $temp_nix
-
-set build_output (nix build --impure --file $temp_nix --no-link 2>&1)
-set build_status $status
-# Only accept the expected fake-hash mismatch from the Go modules derivation.
-set build_log (string join \n -- $build_output | string collect)
-set vendor_hash (string match -rg "(?s)hash mismatch in fixed-output derivation '[^'\n]*-go-modules\\.drv':\\s+specified:\\s+sha256-A{43}=\\s+got:\\s+(sha256-[A-Za-z0-9+/]{43}=)" -- "$build_log")
-
-if test $build_status -eq 0; or test (count $vendor_hash) -ne 1
-    echo "ERROR: Failed to extract vendorHash from build output"
-    printf '%s\n' $build_output
+echo "--- Computing hashes ---"
+set src_hash (prefetch_hash $repo $tag)
+if test -z "$src_hash"
+    echo "ERROR: Failed to compute the src hash"
     exit 1
 end
+echo "$repo: $src_hash"
 
+set sed_args
+set pins
+for entry in $revisions
+    set fields (string split ' ' -- $entry)
+    set binding $fields[1]
+    set slug $fields[2]
+    set rev $fields[3]
+
+    set old_block (block_of $binding $pkg_file)
+    set old_rev (string match -rg '^    rev = "(.*)";$' -- $old_block)
+    set old_hash (string match -rg '^    hash = "(.*)";$' -- $old_block)
+    if test "$old_rev" = "$rev"; and test (count $old_hash) -eq 1
+        set sub_hash $old_hash
+    else
+        set sub_hash (prefetch_hash $slug $rev)
+        if test -z "$sub_hash"
+            echo "ERROR: Failed to compute the hash for $slug at $rev"
+            exit 1
+        end
+    end
+
+    echo "$binding: $sub_hash"
+    set -a pins "$binding $rev $sub_hash"
+
+    set -a sed_args -e "/^  $binding = fetchFromGitHub [{]\$/,/^  [}];\$/ s|^    rev = \".*\";\$|    rev = \"$rev\";|"
+    set -a sed_args -e "/^  $binding = fetchFromGitHub [{]\$/,/^  [}];\$/ s|^    hash = \".*\";\$|    hash = \"$sub_hash\";|"
+end
+
+set vendor_hash (prefetch_vendor_hash)
+if test -z "$vendor_hash"
+    echo "ERROR: Failed to compute the vendorHash"
+    exit 1
+end
 echo "vendorHash: $vendor_hash"
 
-echo "--- Writing $pkg_file ---"
+echo "--- Writing $pkg_file and $go_service_file ---"
+set work_pkg_file $tmpdir/package.nix
+set work_go_file $tmpdir/go-service.nix
+cp $pkg_file $work_pkg_file
+cp $go_service_file $work_go_file
+
 sed -i -E \
     -e "s|^  version = \".*\";\$|  version = \"$new_version\";|" \
-    -e "/^  src = fetchFromGitHub \{\$/,/^  \};\$/ s|^    hash = \".*\";\$|    hash = \"$src_hash\";|" \
-    $sed_args $pkg_file
-
-# go-service pins its own vendorHash
-sed -i -E "s|^  vendorHash = \".*\";\$|  vendorHash = \"$vendor_hash\";|" $go_service_file
-
-# the range-addressed edits above are silent no-ops when they do not match
-set pkg_content (cat $pkg_file)
-for pin in $pins
-    if not string match -q -- "*$pin*" $pkg_content
-        echo "ERROR: $pin was not written to $pkg_file"
-        exit 1
-    end
-end
-if not string match -q -- "*$vendor_hash*" (cat $go_service_file)
-    echo "ERROR: $vendor_hash was not written to $go_service_file"
+    -e "/^  src = fetchFromGitHub [{]\$/,/^  [}];\$/ s|^    hash = \".*\";\$|    hash = \"$src_hash\";|" \
+    $sed_args $work_pkg_file
+or begin
+    echo "ERROR: Failed to update $pkg_file"
     exit 1
 end
 
-echo "--- Updated to v$new_version ---"
+sed -i -E "s|^  vendorHash = \".*\";\$|  vendorHash = \"$vendor_hash\";|" $work_go_file
+or begin
+    echo "ERROR: Failed to update $go_service_file"
+    exit 1
+end
+
+set pkg_content (cat $work_pkg_file)
+if not string match -q -- "*  version = \"$new_version\";*" $pkg_content
+    echo "ERROR: version was not written to $pkg_file"
+    exit 1
+end
+if not string match -q -- "*hash = \"$src_hash\";*" (block_of src $work_pkg_file)
+    echo "ERROR: src.hash was not written to $pkg_file"
+    exit 1
+end
+for pin in $pins
+    set fields (string split ' ' -- $pin)
+    set block (block_of $fields[1] $work_pkg_file)
+    if not string match -q -- "*rev = \"$fields[2]\";*" $block
+        echo "ERROR: $fields[1].rev was not written to $pkg_file"
+        exit 1
+    end
+    if not string match -q -- "*hash = \"$fields[3]\";*" $block
+        echo "ERROR: $fields[1].hash was not written to $pkg_file"
+        exit 1
+    end
+end
+if not string match -q -- "*  vendorHash = \"$vendor_hash\";*" (cat $work_go_file)
+    echo "ERROR: vendorHash was not written to $go_service_file"
+    exit 1
+end
+
+mv $work_pkg_file $pkg_file
+mv $work_go_file $go_service_file
+echo "--- Updated to $tag ---"

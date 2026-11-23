@@ -49,22 +49,20 @@ jobs:
             echo "No changes to commit"
           fi
 
-      # maaend 的 update.fish 只依赖 PATH 中的工具，这里通过 nix shell 提供
       - name: update maaend
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           chmod +x pkgs/maaend/update.fish
-          nix shell nixpkgs#fish nixpkgs#nix nixpkgs#jq nixpkgs#curl nixpkgs#gnused nixpkgs#git \
-            --command fish pkgs/maaend/update.fish
+          pkgs/maaend/update.fish
 
       - name: commit & push maaend
         run: |
-          if ! git diff --quiet pkgs/maaend/package.nix; then
+          if ! git diff --quiet pkgs/maaend/package.nix pkgs/maaend/go-service.nix; then
             OLD_VERSION=$(git show HEAD:pkgs/maaend/package.nix | sed -nE 's/^  version = "(.*)";$/\1/p')
             NEW_VERSION=$(sed -nE 's/^  version = "(.*)";$/\1/p' pkgs/maaend/package.nix)
 
-            git add pkgs/maaend/package.nix
+            git add pkgs/maaend/package.nix pkgs/maaend/go-service.nix
             git commit -m "maaend: ${OLD_VERSION} -> ${NEW_VERSION}"
             git push
           else
